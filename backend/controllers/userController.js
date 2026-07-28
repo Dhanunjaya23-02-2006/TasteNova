@@ -1,0 +1,642 @@
+const User = require('../models/User');
+const City = require('../models/City');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+
+function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Radius of the earth in km
+    const dLat = (lat2 - lat1) * (Math.PI/180);
+    const dLon = (lon2 - lon1) * (Math.PI/180);
+    const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * (Math.PI/180)) * Math.cos(lat2 * (Math.PI/180)) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2); 
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    return R * c; // Distance in km
+}
+
+const generateToken = (id) => {
+    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+};
+
+// @desc    Register a new user
+// @route   POST /api/users
+// @access  Public
+const registerUser = async (req, res) => {
+    const { email } = req.body;
+
+    const userExists = await User.findOne({ email });
+
+    if (userExists) {
+        return res.status(400).json({ message: 'User already exists' });
+    }
+
+    try {
+        const otpRes = await fetch('https://otp-service-beta.vercel.app/api/otp/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, type: 'numeric', organization: 'TasteNova', subject: 'Account Verification OTP' })
+        });
+        const otpData = await otpRes.json();
+
+        if (otpRes.ok) {
+            res.status(200).json({
+                message: 'OTP sent to your email.'
+            });
+        } else {
+            res.status(500).json({ message: 'Failed to dispatch OTP: ' + (otpData.message || 'Service Error') });
+        }
+    } catch (error) {
+        console.error('External OTP Service Error:', error);
+        res.status(500).json({ message: 'OTP service is currently unavailable.' });
+    }
+};
+
+// @desc    Check if roles are available
+// @route   GET /api/users/check-roles
+// @access  Public
+const checkRoleAvailability = async (req, res) => {
+    try {
+        const superadmin = await User.findOne({ role: 'superadmin' });
+        const admin = await User.findOne({ role: 'admin' });
+        res.json({ 
+            superadminExists: !!superadmin,
+            adminExists: !!admin
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error checking role availability' });
+    }
+};
+
+// @desc    Verify Email OTP
+// @route   POST /api/users/verify-otp
+// @access  Public
+const verifyOtp = async (req, res) => {
+    const { name, email, password, phone, address, location, role, emailOtp } = req.body;
+
+    const userExists = await User.findOne({ email });
+    if (userExists) return res.status(400).json({ message: 'User already exists' });
+
+    try {
+        const verifyRes = await fetch('https://otp-service-beta.vercel.app/api/otp/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, otp: emailOtp })
+        });
+        const verifyData = await verifyRes.json();
+
+        if (verifyRes.ok) {
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(password, salt);
+
+            // Special Role Assignment Logic
+            let assignedRole = 'user';
+            let status = 'active';
+            const userCount = await User.countDocuments({});
+            const superadminExists = await User.findOne({ role: 'superadmin' });
+            const adminExists = await User.findOne({ role: 'admin' });
+
+            if (userCount === 0 || (role === 'superadmin' && !superadminExists)) {
+                assignedRole = 'superadmin';
+            } else if (role === 'admin' && !adminExists) {
+                assignedRole = 'admin';
+            } else if (role === 'delivery') {
+                assignedRole = 'delivery';
+                status = 'pending'; // Require approval
+            } else if (role === 'chef') {
+                assignedRole = 'chef';
+                status = 'pending'; // Require approval
+            }
+
+            const addresses = [];
+            if (address || location) {
+                addresses.push({
+                    label: 'Home',
+                    streetAddress: address || 'No address provided',
+                    location: location || { lat: 19.0760, lng: 72.8777 }
+                });
+            }
+
+            let kitchenLocData = undefined;
+            if (assignedRole === 'chef' && location) {
+                kitchenLocData = {
+                    type: 'Point',
+                    coordinates: [location.lng, location.lat]
+                };
+            }
+
+            let assignedCityId = undefined;
+            if (location && location.lat && location.lng) {
+                const cities = await City.find({ isActive: true });
+                let closestCity = null;
+                let minDistance = Infinity;
+                for (const city of cities) {
+                    if (city.latitude && city.longitude) {
+                        const dist = getDistanceFromLatLonInKm(location.lat, location.lng, city.latitude, city.longitude);
+                        // Allow assigning to city if within deliveryRadius (or a generous fallback like 50km if radius isn't strictly enforced for registration)
+                        if (dist < minDistance && dist <= (city.deliveryRadius || 50)) {
+                            minDistance = dist;
+                            closestCity = city;
+                        }
+                    }
+                }
+                if (closestCity) {
+                    assignedCityId = closestCity._id;
+                }
+            }
+
+            const user = await User.create({
+                name,
+                email,
+                password: hashedPassword,
+                phone,
+                role: assignedRole,
+                status,
+                city: assignedCityId,
+                addresses,
+                isPhoneVerified: true,
+                isEmailVerified: true,
+                businessName: req.body.businessName,
+                description: req.body.description,
+                kitchenImage: req.body.kitchenImage,
+                fssaiNumber: req.body.fssaiNumber,
+                kitchenLocation: kitchenLocData
+            });
+
+            if (user) {
+                res.status(201).json({
+                    _id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role,
+                    businessName: user.businessName,
+                    addresses: user.addresses,
+                    token: generateToken(user._id)
+                });
+            } else {
+                res.status(400).json({ message: 'Invalid user data during creation' });
+            }
+        } else {
+            return res.status(400).json({ message: verifyData.message || 'Invalid OTP provided' });
+        }
+    } catch (error) {
+        console.error('External OTP verification error:', error);
+        return res.status(500).json({ message: 'OTP verification service unavailable' });
+    }
+};
+
+// @desc    Auth user & get token
+// @route   POST /api/users/login
+// @access  Public
+const authUser = async (req, res) => {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (user && (await bcrypt.compare(password, user.password))) {
+        if (user.status === 'suspended') {
+            return res.status(403).json({ message: 'Your account has been suspended. Please contact support.' });
+        }
+        res.json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            status: user.status,
+            addresses: user.addresses,
+            following: user.following || [],
+            token: generateToken(user._id)
+        });
+    } else {
+        res.status(401).json({ message: 'Invalid email or password' });
+    }
+};
+
+// @desc    Get user profile
+// @route   GET /api/users/profile
+// @access  Private
+const getUserProfile = async (req, res) => {
+    const user = await User.findById(req.user._id);
+
+    if (user) {
+        res.json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            addresses: user.addresses,
+            role: user.role,
+            following: user.following || []
+        });
+    } else {
+        res.status(404).json({ message: 'User not found' });
+    }
+};
+
+// @desc    Get Admin Location
+// @route   GET /api/users/admin-location
+// @access  Public
+const getAdminLocation = async (req, res) => {
+    let targetUser;
+    if (req.query.chefId) {
+        targetUser = await User.findById(req.query.chefId).select('addresses');
+    }
+    if (!targetUser) {
+        targetUser = await User.findOne({ role: 'admin' }).select('addresses');
+    }
+
+    if (targetUser && targetUser.addresses && targetUser.addresses.length > 0) {
+        res.json(targetUser.addresses[0].location);
+    } else {
+        // Default location (e.g., Mumbai) if admin/chef not found or no location set
+        res.json({ lat: 19.0760, lng: 72.8777 });
+    }
+};
+
+// @desc    Update user profile
+// @route   PUT /api/users/profile
+// @access  Private
+const updateUserProfile = async (req, res) => {
+    const user = await User.findById(req.user._id);
+
+    if (user) {
+        user.name = req.body.name || user.name;
+        user.phone = req.body.phone || user.phone;
+        if (req.body.role && ['user', 'chef', 'delivery'].includes(req.body.role)) {
+            user.role = req.body.role;
+        }
+        user.businessName = req.body.businessName || user.businessName;
+        user.description = req.body.description || user.description;
+        user.kitchenImage = req.body.kitchenImage || user.kitchenImage;
+
+        if (req.body.deliveryRadius) {
+            user.deliveryRadius = req.body.deliveryRadius;
+        }
+        if (req.body.kitchenLocation) {
+            user.kitchenLocation = req.body.kitchenLocation;
+        }
+
+        if (req.body.addresses) {
+            user.addresses = req.body.addresses;
+        }
+
+        if (req.body.password) {
+            const salt = await bcrypt.genSalt(10);
+            user.password = await bcrypt.hash(req.body.password, salt);
+        }
+
+        const updatedUser = await user.save();
+
+        res.json({
+            _id: updatedUser._id,
+            name: updatedUser.name,
+            email: updatedUser.email,
+            phone: updatedUser.phone,
+            role: updatedUser.role,
+            businessName: updatedUser.businessName,
+            addresses: updatedUser.addresses,
+            token: generateToken(updatedUser._id),
+        });
+    } else {
+        res.status(404).json({ message: 'User not found' });
+    }
+};
+
+// @desc    Forgot Password Request OTP
+// @route   POST /api/users/forgot-password
+// @access  Public
+const forgotPassword = async (req, res) => {
+    const { identifier } = req.body; // Can be email or phone
+    const user = await User.findOne({ $or: [{ email: identifier }, { phone: identifier }] });
+
+    if (!user) return res.status(404).json({ message: 'No account found with that email' });
+
+    try {
+        const otpRes = await fetch('https://otp-service-beta.vercel.app/api/otp/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: user.email, type: 'numeric', organization: 'TasteNova', subject: 'Password Reset OTP' })
+        });
+        const otpData = await otpRes.json();
+
+        if (otpRes.ok) {
+            res.json({ message: 'Password reset OTP sent to your email' });
+        } else {
+            res.status(500).json({ message: 'Failed to send reset code: ' + (otpData.message || 'Service Error') });
+        }
+    } catch (error) {
+        console.error('External OTP Service Error:', error);
+        res.status(500).json({ message: 'Password reset service is currently unavailable.' });
+    }
+};
+
+// @desc    Verify OTP and Reset Password
+// @route   PUT /api/users/reset-password
+// @access  Public
+const resetPassword = async (req, res) => {
+    const { identifier, otp, newPassword } = req.body;
+    const user = await User.findOne({ email: identifier });
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    try {
+        const verifyRes = await fetch('https://otp-service-beta.vercel.app/api/otp/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: identifier, otp: otp })
+        });
+        const verifyData = await verifyRes.json();
+
+        if (verifyRes.ok) {
+            const salt = await bcrypt.genSalt(10);
+            user.password = await bcrypt.hash(newPassword, salt);
+            await user.save();
+
+            res.json({ message: 'Password reset successfully!' });
+        } else {
+            return res.status(400).json({ message: verifyData.message || 'Invalid reset OTP' });
+        }
+    } catch (error) {
+        console.error('External OTP reset verification error:', error);
+        return res.status(500).json({ message: 'OTP verification service unavailable' });
+    }
+};
+
+// @desc    Get All Users for Management
+// @route   GET /api/users/all-management
+// @access  Private/Admin
+const getAllManagement = async (req, res) => {
+    try {
+        const query = {};
+        if (req.user.role !== 'superadmin') {
+            query.city = req.user.city;
+        }
+
+        const users = await User.find({ ...query, role: 'user' }).select('-password').populate('city', 'name state');
+        const chefs = await User.find({ ...query, role: 'chef' }).select('-password').populate('city', 'name state');
+        const delivery = await User.find({ ...query, role: 'delivery' }).select('-password').populate('city', 'name state');
+        
+        const adminQuery = req.user.role === 'superadmin' ? { role: { $in: ['admin', 'subadmin'] } } : { role: { $in: ['admin', 'subadmin'] }, city: req.user.city };
+        const admins = await User.find(adminQuery).select('-password').populate('city', 'name state');
+        
+        res.json({ users, chefs, delivery, admins });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching management data' });
+    }
+};
+
+// @desc    Delete User
+// @route   DELETE /api/users/:id
+// @access  Private/Superadmin
+const deleteUser = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (user) {
+            await User.deleteOne({ _id: user._id });
+            res.json({ message: 'User removed' });
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting user' });
+    }
+};
+
+// @desc    Update User Status & Verifications
+// @route   PUT /api/users/update-status
+// @access  Private/Admin
+const updateUserStatus = async (req, res) => {
+    try {
+        const { userId, status, isIdVerified, isFssaiVerified, isKitchenVerified } = req.body;
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        if (req.user.role !== 'superadmin' && String(user.city) !== String(req.user.city)) {
+            return res.status(403).json({ message: 'Not authorized for this city' });
+        }
+
+        const updateData = {};
+        if (status !== undefined) updateData.status = status;
+        if (isIdVerified !== undefined) updateData.isIdVerified = isIdVerified;
+        if (isFssaiVerified !== undefined) updateData.isFssaiVerified = isFssaiVerified;
+        if (isKitchenVerified !== undefined) updateData.isKitchenVerified = isKitchenVerified;
+        
+        const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true });
+        res.json({ message: `User updated successfully`, user: updatedUser });
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating user' });
+    }
+};
+
+// @desc    Bulk Delete Users
+// @route   POST /api/users/bulk-delete
+// @access  Private/Superadmin
+const bulkDeleteUsers = async (req, res) => {
+    try {
+        const { userIds } = req.body;
+        if (!userIds || !userIds.length) return res.status(400).json({ message: 'No users selected' });
+
+        await User.deleteMany({ _id: { $in: userIds } });
+        res.json({ message: 'Selected users removed successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error in bulk deletion' });
+    }
+};
+
+// @desc    Update chef operating hours
+// @route   PUT /api/users/operating-hours
+// @access  Private/Chef
+const updateOperatingHours = async (req, res) => {
+    const { lunch, dinner } = req.body;
+
+    if (req.user.role !== 'chef' && req.user.role !== 'admin') {
+        return res.status(401).json({ message: 'Not authorized as chef' });
+    }
+
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        user.operatingHours = {
+            lunch: lunch || user.operatingHours?.lunch,
+            dinner: dinner || user.operatingHours?.dinner
+        };
+
+        const updatedUser = await user.save();
+        res.json(updatedUser.operatingHours);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// @desc    Get featured chefs
+// @route   GET /api/users/chefs/featured
+// @access  Public
+const getFeaturedChefs = async (req, res) => {
+    try {
+        const { lat, lng } = req.query;
+        
+        if (!lat || !lng) {
+            // Require location before showing nearby chefs
+            return res.json([]); 
+        }
+
+        const chefs = await User.aggregate([
+            {
+                $geoNear: {
+                    near: { type: "Point", coordinates: [parseFloat(lng), parseFloat(lat)] },
+                    distanceField: "distance",
+                    spherical: true,
+                    query: { role: 'chef', status: 'active' },
+                    distanceMultiplier: 0.001 // Convert meters to km
+                }
+            },
+            {
+                $match: {
+                    $expr: {
+                        $lte: ["$distance", "$deliveryRadius"]
+                    }
+                }
+            },
+            {
+                $sort: { isPinned: -1, rating: -1, numReviews: -1, distance: 1 }
+            },
+            {
+                $limit: 10
+            },
+            {
+                $project: {
+                    password: 0
+                }
+            }
+        ]);
+            
+        res.json(chefs);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const getAllChefs = async (req, res) => {
+    try {
+        const { lat, lng } = req.query;
+        
+        if (!lat || !lng) {
+            // If no location provided, return paginated active chefs
+            const { APIFeatures, sendPaginatedResponse } = require('../utils/apiFeatures');
+            const features = new APIFeatures(
+                User.find({ role: 'chef', status: 'active' }).select('-password'),
+                req.query
+            )
+                .filter()
+                .sort()
+                .limitFields()
+                .paginate();
+
+            // Default sorting for chefs is by pinned and rating if not specified in query
+            if (!req.query.sort) {
+                features.query = features.query.sort({ isPinned: -1, rating: -1 });
+            }
+
+            return await sendPaginatedResponse(res, features, User); 
+        }
+
+        const chefs = await User.aggregate([
+            {
+                $geoNear: {
+                    near: { type: "Point", coordinates: [parseFloat(lng), parseFloat(lat)] },
+                    distanceField: "distance",
+                    spherical: true,
+                    query: { role: 'chef', status: 'active' },
+                    distanceMultiplier: 0.001 // Convert meters to km
+                }
+            },
+            {
+                $match: {
+                    $expr: {
+                        $lte: ["$distance", "$deliveryRadius"]
+                    }
+                }
+            },
+            {
+                $sort: { isPinned: -1, rating: -1, numReviews: -1, distance: 1 }
+            },
+            {
+                $project: {
+                    password: 0
+                }
+            }
+        ]);
+            
+        res.json(chefs);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const getChefById = async (req, res) => {
+    try {
+        const chef = await User.findById(req.params.id).select('-password');
+        if (!chef || chef.role !== 'chef') {
+            return res.status(404).json({ message: 'Chef not found' });
+        }
+        res.json(chef);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const toggleFollowChef = async (req, res) => {
+    try {
+        const chefId = req.params.id;
+        const user = await User.findById(req.user._id);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const chef = await User.findById(chefId);
+        if (!chef || chef.role !== 'chef') {
+            return res.status(404).json({ message: 'Chef not found' });
+        }
+
+        const isFollowing = user.following && user.following.includes(chefId);
+
+        if (isFollowing) {
+            // Unfollow
+            user.following = user.following.filter(id => id.toString() !== chefId);
+        } else {
+            // Follow
+            if (!user.following) user.following = [];
+            user.following.push(chefId);
+        }
+
+        await user.save();
+        res.json({ message: isFollowing ? 'Unfollowed successfully' : 'Followed successfully', following: user.following });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = {
+    registerUser,
+    verifyOtp,
+    forgotPassword,
+    resetPassword,
+    authUser,
+    getUserProfile,
+    getAdminLocation,
+    updateUserProfile,
+    checkRoleAvailability,
+    getAllManagement,
+    deleteUser,
+    updateUserStatus,
+    bulkDeleteUsers,
+    updateOperatingHours,
+    getFeaturedChefs,
+    getAllChefs,
+    getChefById,
+    toggleFollowChef
+};
