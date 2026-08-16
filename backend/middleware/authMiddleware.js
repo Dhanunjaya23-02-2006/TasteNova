@@ -67,4 +67,33 @@ const superAdmin = (req, res, next) => {
     }
 };
 
-module.exports = { protect, admin, chef, delivery, superAdmin };
+// Sub-admin: allows subadmin, admin, and superadmin roles
+const subadmin = (req, res, next) => {
+    if (req.user && ['subadmin', 'admin', 'superadmin'].includes(req.user.role)) {
+        next();
+    } else {
+        res.status(401).json({ message: 'Not authorized as a Sub-Admin' });
+    }
+};
+
+// Regional/Zonal scope: auto-attaches city and zone filters
+const regionalScope = (req, res, next) => {
+    if (req.user.role === 'superadmin') {
+        req.cityFilter = req.query.cityId ? { city: req.query.cityId } : {};
+        req.zoneFilter = req.query.zoneId ? { zone: req.query.zoneId } : {};
+    } else if (req.user.role === 'admin') {
+        // Admin (Regional): sees all zones within their assigned cities
+        req.cityFilter = req.user.assignedCities?.length > 0 ? { city: { $in: req.user.assignedCities } } : {};
+        req.zoneFilter = {}; // By default, no zone restriction means they see all zones in those cities
+    } else if (req.user.role === 'subadmin') {
+        // Subadmin (Zonal): sees ONLY their assigned zones
+        req.cityFilter = req.user.assignedCities?.length > 0 ? { city: { $in: req.user.assignedCities } } : {};
+        req.zoneFilter = req.user.assignedZones?.length > 0 ? { zone: { $in: req.user.assignedZones } } : {};
+    } else {
+        req.cityFilter = req.user.city ? { city: req.user.city } : {};
+        req.zoneFilter = {};
+    }
+    next();
+};
+
+module.exports = { protect, admin, chef, delivery, superAdmin, subadmin, cityScope: regionalScope };

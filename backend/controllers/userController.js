@@ -52,6 +52,39 @@ const registerUser = async (req, res) => {
     }
 };
 
+// @desc    Register a new partner (chef/delivery)
+// @route   POST /api/users/register-partner
+// @access  Public
+const registerPartner = async (req, res) => {
+    const { email } = req.body;
+
+    const userExists = await User.findOne({ email });
+
+    if (userExists) {
+        return res.status(400).json({ message: 'Email already registered' });
+    }
+
+    try {
+        const otpRes = await fetch('https://otp-service-beta.vercel.app/api/otp/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, type: 'numeric', organization: 'TasteNova', subject: 'Partner Registration OTP' })
+        });
+        const otpData = await otpRes.json();
+
+        if (otpRes.ok) {
+            res.status(200).json({
+                message: 'OTP sent to your email.'
+            });
+        } else {
+            res.status(500).json({ message: 'Failed to dispatch OTP: ' + (otpData.message || 'Service Error') });
+        }
+    } catch (error) {
+        console.error('External OTP Service Error:', error);
+        res.status(500).json({ message: 'OTP service is currently unavailable.' });
+    }
+};
+
 // @desc    Check if roles are available
 // @route   GET /api/users/check-roles
 // @access  Public
@@ -620,8 +653,241 @@ const toggleFollowChef = async (req, res) => {
     }
 };
 
+// @desc    Update chef settings (hours, status, delivery radius, max orders)
+// @route   PUT /api/users/chef-settings
+// @access  Private/Chef
+const updateChefSettings = async (req, res) => {
+    if (req.user.role !== 'chef' && req.user.role !== 'admin') {
+        return res.status(401).json({ message: 'Not authorized as chef' });
+    }
+
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (req.body.operatingHours) user.operatingHours = req.body.operatingHours;
+        if (req.body.deliveryRadius !== undefined) user.deliveryRadius = req.body.deliveryRadius;
+        if (req.body.maxOrdersPerSlot !== undefined) user.maxOrdersPerSlot = req.body.maxOrdersPerSlot;
+        
+        // Kitchen Information updates
+        if (req.body.businessName !== undefined) user.businessName = req.body.businessName;
+        if (req.body.description !== undefined) user.description = req.body.description;
+        if (req.body.kitchenImage !== undefined) user.kitchenImage = req.body.kitchenImage;
+        
+        // Documents updates
+        if (req.body.documents) {
+            if (!user.documents) user.documents = {};
+            if (req.body.documents.idProof !== undefined) user.documents.idProof = req.body.documents.idProof;
+            if (req.body.documents.fssaiCertificate !== undefined) user.documents.fssaiCertificate = req.body.documents.fssaiCertificate;
+        }
+        
+        // Bank Details updates
+        if (req.body.bankDetails) {
+            if (!user.bankDetails) user.bankDetails = {};
+            if (req.body.bankDetails.accountName !== undefined) user.bankDetails.accountName = req.body.bankDetails.accountName;
+            if (req.body.bankDetails.accountNumber !== undefined) user.bankDetails.accountNumber = req.body.bankDetails.accountNumber;
+            if (req.body.bankDetails.ifscCode !== undefined) user.bankDetails.ifscCode = req.body.bankDetails.ifscCode;
+            if (req.body.bankDetails.bankName !== undefined) user.bankDetails.bankName = req.body.bankDetails.bankName;
+        }
+
+        if (req.body.isOpen !== undefined) {
+            if (req.body.isOpen === true) {
+                if (!user.isIdVerified || !user.isFssaiVerified || !user.isKitchenVerified) {
+                    return res.status(403).json({ message: 'Kitchen cannot be opened until all documents (ID, FSSAI, Kitchen) are verified by Admin.' });
+                }
+            }
+            user.isOpen = req.body.isOpen;
+        }
+
+        const updatedUser = await user.save();
+        res.json({
+            operatingHours: updatedUser.operatingHours,
+            deliveryRadius: updatedUser.deliveryRadius,
+            maxOrdersPerSlot: updatedUser.maxOrdersPerSlot,
+            isOpen: updatedUser.isOpen,
+            businessName: updatedUser.businessName,
+            description: updatedUser.description,
+            kitchenImage: updatedUser.kitchenImage,
+            documents: updatedUser.documents,
+            bankDetails: updatedUser.bankDetails
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// @desc    Add a new address to user profile
+// @route   POST /api/users/addresses
+// @access  Private
+const addAddress = async (req, res) => {
+    try {
+        const { 
+            label, receiverName, phone, houseFlat, floor, building, 
+            street, area, landmark, city, state, pincode, 
+            formattedAddress, location, deliveryInstructions, isDefault 
+        } = req.body;
+        
+        const user = await User.findById(req.user._id);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const newAddress = {
+            label, receiverName, phone, houseFlat, floor, building, 
+            street, area, landmark, city, state, pincode, 
+            formattedAddress, location, deliveryInstructions, isDefault
+        };
+
+        if (isDefault) {
+            user.addresses.forEach(a => a.isDefault = false);
+        }
+
+        user.addresses.push(newAddress);
+        await user.save();
+
+        res.status(201).json({ message: 'Address added', addresses: user.addresses });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Delete an address from user profile
+// @route   DELETE /api/users/addresses/:id
+// @access  Private
+const deleteAddress = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        user.addresses = user.addresses.filter(
+            (address) => address._id.toString() !== req.params.id
+        );
+
+        await user.save();
+
+        res.json({ message: 'Address removed', addresses: user.addresses });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Add a payment method to user profile
+// @route   POST /api/users/payment-methods
+// @access  Private
+const addPaymentMethod = async (req, res) => {
+    try {
+        const { cardNumber, cardName, expiryDate, cardType, isDefault } = req.body;
+        const user = await User.findById(req.user._id);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // If this is set to default, unset others
+        if (isDefault) {
+            user.paymentMethods.forEach(pm => pm.isDefault = false);
+        }
+
+        const newPaymentMethod = {
+            cardNumber,
+            cardName,
+            expiryDate,
+            cardType: cardType || 'VISA',
+            isDefault: isDefault || (user.paymentMethods.length === 0)
+        };
+
+        user.paymentMethods.push(newPaymentMethod);
+        await user.save();
+
+        res.status(201).json({ message: 'Payment method added', paymentMethods: user.paymentMethods });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Delete a payment method from user profile
+// @route   DELETE /api/users/payment-methods/:id
+// @access  Private
+const deletePaymentMethod = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        user.paymentMethods = user.paymentMethods.filter(
+            (pm) => pm._id.toString() !== req.params.id
+        );
+
+        // If we deleted the default one and there are others left, make the first one default
+        if (user.paymentMethods.length > 0 && !user.paymentMethods.some(pm => pm.isDefault)) {
+            user.paymentMethods[0].isDefault = true;
+        }
+
+        await user.save();
+
+        res.json({ message: 'Payment method removed', paymentMethods: user.paymentMethods });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get user favourites (following chefs)
+// @route   GET /api/users/favourites
+// @access  Private
+const getUserFavourites = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id).populate('following', 'name kitchenName profileImage rating');
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        res.json(user.following || []);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get customer wallet
+// @route   GET /api/users/wallet
+// @access  Private
+const getCustomerWallet = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        res.json({ balance: user.walletBalance || 0 });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Top up customer wallet
+// @route   POST /api/users/wallet/topup
+// @access  Private
+const topUpCustomerWallet = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        
+        const { amount } = req.body;
+        user.walletBalance = (user.walletBalance || 0) + Number(amount);
+        await user.save();
+        
+        res.json({ balance: user.walletBalance, message: 'Wallet topped up successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     registerUser,
+    registerPartner,
     verifyOtp,
     forgotPassword,
     resetPassword,
@@ -638,5 +904,13 @@ module.exports = {
     getFeaturedChefs,
     getAllChefs,
     getChefById,
-    toggleFollowChef
+    toggleFollowChef,
+    updateChefSettings,
+    addAddress,
+    deleteAddress,
+    addPaymentMethod,
+    deletePaymentMethod,
+    getUserFavourites,
+    getCustomerWallet,
+    topUpCustomerWallet
 };

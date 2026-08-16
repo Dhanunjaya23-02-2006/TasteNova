@@ -7,6 +7,8 @@ const getOffers = async (req, res) => {
         if (req.user.role === 'subadmin' || req.user.role === 'admin') {
             // Subadmins only see their city's offers
             query = { scope: 'City', city: req.user.city };
+        } else if (req.user.role === 'chef') {
+            query = { scope: 'Chef', targetChef: req.user._id };
         } else if (req.user.role !== 'superadmin') {
             return res.status(403).json({ message: 'Unauthorized' });
         }
@@ -18,22 +20,45 @@ const getOffers = async (req, res) => {
     }
 };
 
+const getPublicOffers = async (req, res) => {
+    try {
+        const offers = await Offer.find({ isActive: true, validUntil: { $gte: new Date() } }).populate('city', 'name');
+        res.json(offers);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching offers', error: error.message });
+    }
+};
+
 const createOffer = async (req, res) => {
     try {
-        const { code, description, discountPercentage, maxDiscountAmount, minOrderValue, scope, validUntil, city } = req.body;
+        const { code, description, discountType, discountPercentage, discountFlat, maxDiscountAmount, minOrderValue, scope, validUntil, city } = req.body;
         
-        if (req.user.role === 'subadmin' || req.user.role === 'admin') {
+        let actualScope = scope;
+        let targetChef = null;
+
+        if (req.user.role === 'chef') {
+            actualScope = 'Chef';
+            targetChef = req.user._id;
+        } else if (req.user.role === 'subadmin' || req.user.role === 'admin') {
             if (scope === 'Global') {
                 return res.status(403).json({ message: 'Sub-admins cannot create global offers' });
             }
             if (String(city) !== String(req.user.city)) {
                 return res.status(403).json({ message: 'Sub-admins can only create offers for their own city' });
             }
+        } else if (req.user.role !== 'superadmin') {
+            return res.status(403).json({ message: 'Unauthorized' });
         }
 
         const offer = await Offer.create({
-            code, description, discountPercentage, maxDiscountAmount, minOrderValue, scope, 
-            city: scope === 'City' ? city : null,
+            code, description, 
+            discountType: discountType || 'percentage',
+            discountPercentage, 
+            discountFlat,
+            maxDiscountAmount, minOrderValue, 
+            scope: actualScope, 
+            city: actualScope === 'City' ? city : null,
+            targetChef,
             validUntil,
             createdBy: req.user._id
         });
@@ -71,4 +96,4 @@ const updateOfferStatus = async (req, res) => {
     }
 };
 
-module.exports = { getOffers, createOffer, updateOfferStatus };
+module.exports = { getOffers, getPublicOffers, createOffer, updateOfferStatus };

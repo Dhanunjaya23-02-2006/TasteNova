@@ -46,6 +46,64 @@ const createSubscriptionPlan = async (req, res) => {
     }
 };
 
+
+// @desc    Update a subscription plan
+// @route   PUT /api/subscriptions/plans/:id
+// @access  Private/Chef
+const updateSubscriptionPlan = async (req, res) => {
+    try {
+        if (req.user.role !== 'chef' && req.user.role !== 'admin') {
+            return res.status(401).json({ message: 'Not authorized' });
+        }
+
+        const plan = await SubscriptionPlan.findById(req.params.id);
+
+        if (!plan) {
+            return res.status(404).json({ message: 'Plan not found' });
+        }
+
+        if (plan.chef.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            return res.status(401).json({ message: 'Not authorized to update this plan' });
+        }
+
+        const updatedPlan = await SubscriptionPlan.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true }
+        );
+
+        res.json(updatedPlan);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// @desc    Delete a subscription plan
+// @route   DELETE /api/subscriptions/plans/:id
+// @access  Private/Chef
+const deleteSubscriptionPlan = async (req, res) => {
+    try {
+        if (req.user.role !== 'chef' && req.user.role !== 'admin') {
+            return res.status(401).json({ message: 'Not authorized' });
+        }
+
+        const plan = await SubscriptionPlan.findById(req.params.id);
+
+        if (!plan) {
+            return res.status(404).json({ message: 'Plan not found' });
+        }
+
+        if (plan.chef.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            return res.status(401).json({ message: 'Not authorized to delete this plan' });
+        }
+
+        await plan.deleteOne();
+        res.json({ message: 'Plan removed' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
 // @desc    Purchase a subscription plan
 // @route   POST /api/subscriptions/subscribe
 // @access  Private
@@ -103,6 +161,8 @@ const getMySubscriptions = async (req, res) => {
 module.exports = {
     getSubscriptionPlans,
     createSubscriptionPlan,
+    updateSubscriptionPlan,
+    deleteSubscriptionPlan,
     purchaseSubscription,
     getMySubscriptions
 };

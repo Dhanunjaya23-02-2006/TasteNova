@@ -1,4 +1,5 @@
 const City = require('../models/City');
+const { clearCache } = require('../middleware/cacheMiddleware');
 
 const getCities = async (req, res) => {
     try {
@@ -27,6 +28,7 @@ const createCity = async (req, res) => {
             name, state, country, latitude, longitude, deliveryRadius
         });
         
+        clearCache('/api/cities');
         res.status(201).json(city);
     } catch (error) {
         res.status(500).json({ message: 'Error creating city', error: error.message });
@@ -43,6 +45,7 @@ const updateCityStatus = async (req, res) => {
         if (city) {
             city.isActive = !city.isActive;
             const updatedCity = await city.save();
+            clearCache('/api/cities');
             res.json(updatedCity);
         } else {
             res.status(404).json({ message: 'City not found' });
@@ -72,6 +75,7 @@ const updateCity = async (req, res) => {
 
         const updatedCity = await city.save();
         
+        clearCache('/api/cities');
         // Notify all clients (customers) about the city setting update so they can refresh delivery rates
         req.app.get('io').emit('city_updated', updatedCity);
 
@@ -92,6 +96,7 @@ const deleteCity = async (req, res) => {
         }
         await City.deleteOne({ _id: city._id });
         
+        clearCache('/api/cities');
         req.app.get('io').emit('city_deleted', city._id);
         res.json({ message: 'City removed' });
     } catch (error) {

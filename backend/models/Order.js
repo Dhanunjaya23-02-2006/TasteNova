@@ -37,7 +37,7 @@ const orderSchema = mongoose.Schema({
     },
     deliveryStatus: {
         type: String,
-        enum: ['Pending', 'Assigned', 'Picked Up', 'Delivered'],
+        enum: ['Pending', 'Assigned', 'Arrived At Chef', 'Picked Up', 'Arrived At Customer', 'Delivered'],
         default: 'Pending'
     },
     deliveryPartner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

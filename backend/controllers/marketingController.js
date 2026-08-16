@@ -1,6 +1,7 @@
 const Banner = require('../models/Banner');
 const Notification = require('../models/Notification');
 const Offer = require('../models/Offer');
+const MarketingCampaign = require('../models/MarketingCampaign');
 
 // @desc    Get all banners
 // @route   GET /api/superadmin/marketing/banners
@@ -118,6 +119,48 @@ const getPublicBanners = async (req, res) => {
     }
 };
 
+// @desc    Get marketing campaigns (Chefs)
+// @route   GET /api/marketing/campaigns
+// @access  Private/Chef
+const getCampaigns = async (req, res) => {
+    try {
+        let query = {};
+        if (req.user.role === 'chef') {
+            query.chef = req.user._id;
+        } else if (req.user.role !== 'superadmin' && req.user.role !== 'admin' && req.user.role !== 'subadmin') {
+            return res.status(403).json({ message: 'Unauthorized' });
+        }
+        
+        const campaigns = await MarketingCampaign.find(query).populate('menuItem', 'name').sort({ createdAt: -1 });
+        res.json(campaigns);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching campaigns', error: error.message });
+    }
+};
+
+// @desc    Create marketing campaign request
+// @route   POST /api/marketing/campaigns
+// @access  Private/Chef
+const createCampaign = async (req, res) => {
+    try {
+        const { type, menuItem, startDate, endDate, budget, notes } = req.body;
+        
+        const campaign = await MarketingCampaign.create({
+            type,
+            chef: req.user._id,
+            menuItem: type === 'Promote Dish' ? menuItem : null,
+            startDate,
+            endDate,
+            budget,
+            notes
+        });
+
+        res.status(201).json(campaign);
+    } catch (error) {
+        res.status(500).json({ message: 'Error creating campaign', error: error.message });
+    }
+};
+
 module.exports = {
     getBanners,
     createBanner,
@@ -125,5 +168,7 @@ module.exports = {
     deleteBanner,
     sendNotification,
     getNotifications,
-    getPublicBanners
+    getPublicBanners,
+    getCampaigns,
+    createCampaign
 };

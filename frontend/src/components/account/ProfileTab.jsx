@@ -275,7 +275,7 @@ const ProfileTab = () => {
                                 {kitchenLocation ? (
                                     <span style={{ color: 'var(--success)', fontSize: '0.85rem' }}>✓ Kitchen location secured</span>
                                 ) : (
-                                    <span style={{ color: 'var(--secondary-color)', fontSize: '0.85rem' }}>⚠ Please tap on the map to set your kitchen's exact location</span>
+                                    <span style={{ color: 'var(--accent)', fontSize: '0.85rem' }}>⚠ Please tap on the map to set your kitchen's exact location</span>
                                 )}
                             </div>
                         </>
@@ -347,7 +347,7 @@ const ProfileTab = () => {
                     </div>
 
                     {user.role === 'admin' && (
-                        <p style={{ color: 'var(--primary-color)', fontSize: '0.9rem', marginBottom: '10px' }}>
+                        <p style={{ color: 'var(--primary)', fontSize: '0.9rem', marginBottom: '10px' }}>
                             * Note: The <strong>first address</strong> in your list acts as the main TasteNova Kitchen Location.
                         </p>
                     )}

@@ -2,13 +2,14 @@ import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
 import toast from 'react-hot-toast';
-import { Plus, Trash2, PackagePlus } from 'lucide-react';
+import { Plus, Trash2, PackagePlus, Edit } from 'lucide-react';
 
 const ChefPlans = () => {
     const { user } = useContext(AuthContext);
     const [plans, setPlans] = useState([]);
     const [menuItems, setMenuItems] = useState([]);
     const [isCreating, setIsCreating] = useState(false);
+    const [editingPlanId, setEditingPlanId] = useState(null);
     const [newPlan, setNewPlan] = useState({
         name: '', description: '', type: 'Weekly', mealType: 'Lunch', price: '',
         weeklyMenu: { monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: [] }
@@ -33,23 +34,73 @@ const ChefPlans = () => {
         } catch (error) { console.error(error); }
     };
 
-    const handleCreate = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch(`${API_URL}/subscriptions/plans`, {
-                method: 'POST',
+            const url = editingPlanId 
+                ? `${API_URL}/subscriptions/plans/${editingPlanId}`
+                : `${API_URL}/subscriptions/plans`;
+            
+            const method = editingPlanId ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` },
                 body: JSON.stringify(newPlan)
             });
             if (res.ok) {
-                toast.success('Plan created!');
+                toast.success(editingPlanId ? 'Plan updated!' : 'Plan created!');
                 setIsCreating(false);
+                setEditingPlanId(null);
+                setNewPlan({
+                    name: '', description: '', type: 'Weekly', mealType: 'Lunch', price: '',
+                    weeklyMenu: { monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: [] }
+                });
                 fetchPlans();
             } else {
-                toast.error('Failed to create plan');
+                toast.error(`Failed to ${editingPlanId ? 'update' : 'create'} plan`);
             }
         } catch (error) {
-            toast.error('Error creating plan');
+            toast.error(`Error ${editingPlanId ? 'updating' : 'creating'} plan`);
+        }
+    };
+
+    const handleEdit = (plan) => {
+        setNewPlan({
+            name: plan.name,
+            description: plan.description,
+            type: plan.type,
+            mealType: plan.mealType,
+            price: plan.price,
+            weeklyMenu: {
+                monday: plan.weeklyMenu?.monday || [],
+                tuesday: plan.weeklyMenu?.tuesday || [],
+                wednesday: plan.weeklyMenu?.wednesday || [],
+                thursday: plan.weeklyMenu?.thursday || [],
+                friday: plan.weeklyMenu?.friday || [],
+                saturday: plan.weeklyMenu?.saturday || [],
+                sunday: plan.weeklyMenu?.sunday || []
+            }
+        });
+        setEditingPlanId(plan._id);
+        setIsCreating(true);
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this plan?')) return;
+        try {
+            const res = await fetch(`${API_URL}/subscriptions/plans/${id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${user.token}` }
+            });
+            if (res.ok) {
+                toast.success('Plan deleted!');
+                fetchPlans();
+            } else {
+                toast.error('Failed to delete plan');
+            }
+        } catch (error) {
+            toast.error('Error deleting plan');
         }
     };
 
@@ -57,15 +108,24 @@ const ChefPlans = () => {
         <div className="glass-panel" style={{ padding: '30px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <h3 style={{ color: 'var(--primary-color)', margin: 0 }}>Subscription Plans</h3>
-                <button className="btn btn-primary" onClick={() => setIsCreating(!isCreating)} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button className="btn btn-primary" onClick={() => {
+                    setIsCreating(!isCreating);
+                    if (isCreating) {
+                        setEditingPlanId(null);
+                        setNewPlan({
+                            name: '', description: '', type: 'Weekly', mealType: 'Lunch', price: '',
+                            weeklyMenu: { monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: [] }
+                        });
+                    }
+                }} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     {isCreating ? 'Cancel' : <><Plus size={18} /> Create Plan</>}
                 </button>
             </div>
 
             {isCreating && (
                 <div style={{ background: 'var(--bg-body)', padding: '20px', borderRadius: '12px', marginBottom: '30px' }}>
-                    <h4>Create New Plan</h4>
-                    <form onSubmit={handleCreate}>
+                    <h4>{editingPlanId ? 'Edit Plan' : 'Create New Plan'}</h4>
+                    <form onSubmit={handleSubmit}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
                             <div className="form-group">
                                 <label>Plan Name (e.g. Weekly Veg Lunch)</label>
@@ -99,36 +159,53 @@ const ChefPlans = () => {
                         <div style={{ padding: '15px', background: 'var(--bg-card)', borderRadius: '10px', marginBottom: '20px' }}>
                             <h5 style={{ marginBottom: '15px' }}>Weekly Menu Assignment (Select 1-3 items per day)</h5>
                             {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
-                                <div key={day} style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                    <strong style={{ textTransform: 'capitalize', width: '100px' }}>{day}:</strong>
-                                    <select 
-                                        className="form-control" 
-                                        multiple 
-                                        style={{ flex: 1, height: '80px', padding: '8px', overflowY: 'auto' }}
-                                        value={newPlan.weeklyMenu[day]}
-                                        onChange={e => {
-                                            const options = [...e.target.options].filter(o => o.selected).map(o => o.value);
-                                            setNewPlan({...newPlan, weeklyMenu: {...newPlan.weeklyMenu, [day]: options}});
-                                        }}
-                                    >
+                                <div key={day} style={{ marginBottom: '15px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
+                                    <strong style={{ textTransform: 'capitalize', display: 'block', marginBottom: '8px' }}>{day}:</strong>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                                         {menuItems.map(item => (
-                                            <option key={item._id} value={item._id}>{item.name}</option>
+                                            <label key={item._id} style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', background: 'var(--bg-body)', padding: '5px 10px', borderRadius: '20px', border: '1px solid var(--border-color)', fontSize: '0.9rem' }}>
+                                                <input 
+                                                    type="checkbox"
+                                                    checked={newPlan.weeklyMenu[day]?.includes(item._id) || false}
+                                                    onChange={e => {
+                                                        const current = newPlan.weeklyMenu[day] || [];
+                                                        let updated;
+                                                        if (e.target.checked) {
+                                                            if (current.length >= 3) {
+                                                                toast.error('Maximum 3 items allowed per day');
+                                                                return;
+                                                            }
+                                                            updated = [...current, item._id];
+                                                        } else {
+                                                            updated = current.filter(id => id !== item._id);
+                                                        }
+                                                        setNewPlan({...newPlan, weeklyMenu: {...newPlan.weeklyMenu, [day]: updated}});
+                                                    }}
+                                                />
+                                                {item.name}
+                                            </label>
                                         ))}
-                                    </select>
+                                    </div>
                                 </div>
                             ))}
                         </div>
 
-                        <button type="submit" className="btn btn-secondary">Save Plan</button>
+                        <button type="submit" className="btn btn-secondary">{editingPlanId ? 'Update Plan' : 'Save Plan'}</button>
                     </form>
                 </div>
             )}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
                 {plans.map(plan => (
-                    <div key={plan._id} style={{ background: 'var(--bg-body)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div key={plan._id} style={{ background: 'var(--bg-body)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)', position: 'relative' }}>
+                        <div style={{ position: 'absolute', top: '15px', right: '15px', display: 'flex', gap: '5px' }}>
+                            <button className="btn btn-sm" onClick={() => handleEdit(plan)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '5px' }} title="Edit Plan"><Edit size={16} /></button>
+                            <button className="btn btn-sm" onClick={() => handleDelete(plan._id)} style={{ background: 'transparent', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', padding: '5px' }} title="Delete Plan"><Trash2 size={16} /></button>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingRight: '50px' }}>
                             <h4 style={{ margin: '0 0 10px 0', color: 'var(--secondary-color)' }}>{plan.name}</h4>
+                        </div>
+                        <div style={{ marginBottom: '10px' }}>
                             <span className="status-badge status-active">{plan.type}</span>
                         </div>
                         <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{plan.description}</p>

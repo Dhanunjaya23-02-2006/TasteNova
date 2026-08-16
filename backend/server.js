@@ -13,6 +13,7 @@ const hpp = require('hpp');
 const mongoSanitize = require('express-mongo-sanitize');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
+const path = require('path');
 const validateEnv = require('./middleware/validateEnv');
 const startEscrowSettlementJob = require('./cron/escrowSettlementJob');
 
@@ -89,6 +90,11 @@ io.on('connection', (socket) => {
         socket.join(orderId);
     });
 
+    socket.on('join_user', () => {
+        socket.join('user_' + socket.user.id);
+        debug(`Socket joined user room user_${socket.user.id}`);
+    });
+
     socket.on('join_tracking', (orderId) => {
         socket.join('track_' + orderId);
         debug(`Socket joined tracking room for ${orderId}`);
@@ -102,6 +108,11 @@ io.on('connection', (socket) => {
         } else {
             debug(`Unauthorized attempt to join chef room ${chefId} by ${socket.user.id}`);
         }
+    });
+
+    socket.on('join_ticket', (ticketId) => {
+        socket.join('ticket_' + ticketId);
+        debug(`Socket joined ticket room ticket_${ticketId}`);
     });
 
     socket.on('send_location', (data) => {
@@ -127,7 +138,7 @@ const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const adminRoutes = require('./routes/adminRoutes');
-// const deliveryRoutes = require('./routes/deliveryRoutes');
+const deliveryRoutes = require('./routes/deliveryRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 // const dashboardRoutes = require('./routes/dashboardRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
@@ -142,6 +153,14 @@ const superadminRoutes = require('./routes/superadminRoutes');
 const bannerRoutes = require('./routes/bannerRoutes');
 const platformRoutes = require('./routes/platformRoutes');
 const communityRoutes = require('./routes/communityRoutes');
+const subadminRoutes2 = require('./routes/subadminRoutes2');
+const supportRoutes = require('./routes/supportRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
+const marketingRoutes = require('./routes/marketingRoutes');
+const walletRoutes = require('./routes/walletRoutes');
+const referralRoutes = require('./routes/referralRoutes');
+const contentRoutes = require('./routes/contentRoutes');
 
 // Use Routes
 const app_use = false; // Dummy variable to keep the line lengths exact or close
@@ -149,14 +168,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/orders', orderRoutes);
-// app.use('/api/delivery', deliveryRoutes);
+app.use('/api/delivery', deliveryRoutes);
 app.use('/api/payment', paymentRoutes);
 // app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/chefBookings', chefBookingRoutes);
 app.use('/api/reviews', reviewRoutes);
-app.use('/api/webhooks', webhookRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/cities', cityRoutes);
 app.use('/api/offers', offerRoutes);
@@ -164,6 +181,19 @@ app.use('/api/superadmin', superadminRoutes);
 app.use('/api/banners', bannerRoutes);
 app.use('/api/platform', platformRoutes);
 app.use('/api/community', communityRoutes);
+app.use('/api/subscriptions', require('./routes/subscriptionRoutes'));
+app.use('/api/webhooks', require('./routes/webhookRoutes'));
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/subadmin', subadminRoutes2);
+app.use('/api/support', supportRoutes);
+app.use('/api/marketing', marketingRoutes);
+app.use('/api/earnings', walletRoutes);
+app.use('/api/referrals', referralRoutes);
+app.use('/api/content', contentRoutes);
+
+// Make uploads folder static
+app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 
 // Global Error Handler
 app.use((err, req, res, next) => {

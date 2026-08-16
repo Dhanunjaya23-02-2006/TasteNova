@@ -1,125 +1,153 @@
-import React, { useMemo } from 'react';
-import { TrendingUp, DollarSign, Package, Activity, Camera, Presentation, MessageSquare, Zap, BarChart2 } from 'lucide-react';
+import React from 'react';
+import { 
+    TrendingUp, Package, Activity, Brain, 
+    Lightbulb, TrendingDown, Camera, Box, MessageSquare,
+    Zap, BarChart2, Layers
+} from 'lucide-react';
 
-const ChefGrowth = ({ orders }) => {
-    // Analytics calculations
-    const analytics = useMemo(() => {
-        if (!orders || orders.length === 0) return { revenue: 0, orderCount: 0, topDishes: [] };
-        
-        // Count as completed if not pending or cancelled
-        const completedOrders = orders.filter(o => o.status !== 'Pending' && o.status !== 'Cancelled');
-        const revenue = completedOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
-        const orderCount = completedOrders.length;
-
-        // Top dishes count
-        const dishCounts = {};
-        completedOrders.forEach(order => {
-            order.items?.forEach(item => {
-                dishCounts[item.name] = (dishCounts[item.name] || 0) + item.qty;
-            });
-        });
-        
-        const topDishes = Object.entries(dishCounts)
-            .map(([name, count]) => ({ name, count }))
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 3);
-
-        return { revenue, orderCount, topDishes };
-    }, [orders]);
+const ChefGrowth = ({ stats }) => {
+    const totalEarnings = stats?.totalEarnings || 0;
+    const completedOrders = stats?.ordersCompletedToday || 0;
+    const topDish = stats?.topDishes && stats.topDishes.length > 0 ? stats.topDishes[0].name : 'No data yet';
 
     return (
-        <div className="animate-fade-up">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', flexWrap: 'wrap', gap: '15px' }}>
-                <h2 style={{ fontSize: '1.8rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <TrendingUp color="var(--primary)" /> Growth Hub
-                </h2>
-                <span style={{ padding: '6px 12px', background: 'rgba(212, 175, 55, 0.1)', color: 'var(--primary)', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 'bold' }}>
+        <div style={{ maxWidth: '1200px', paddingBottom: '40px' }} className="animate-fade-up">
+            
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+                <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0F3F26', margin: 0, display: 'flex', alignItems: 'center', gap: '12px', fontFamily: '"Playfair Display", serif' }}>
+                    <TrendingUp color="#27ae60" size={28} /> Growth Hub
+                </h1>
+                <button style={{ 
+                    background: '#e8f5e9', color: '#2e7d32', border: 'none', 
+                    padding: '8px 16px', borderRadius: '20px', fontWeight: 700, 
+                    fontSize: '0.85rem', cursor: 'pointer' 
+                }}>
                     Shopify for Home Chefs
-                </span>
+                </button>
             </div>
 
-            {/* Analytics Overview */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '20px', marginBottom: '35px' }}>
-                <div className="glass-panel p-4" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                    <div style={{ padding: '15px', background: 'rgba(46, 204, 113, 0.1)', borderRadius: '12px', color: '#2ecc71' }}>
-                        <DollarSign size={28} />
+            {/* 3 Stat Cards Row */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '40px' }}>
+                {/* Revenue Card */}
+                <div style={{ background: '#fff', borderRadius: '16px', padding: '24px', display: 'flex', alignItems: 'center', gap: '20px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
+                    <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#e8f5e9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <span style={{ color: '#2e7d32', fontSize: '1.5rem', fontWeight: 700 }}>$</span>
                     </div>
                     <div>
-                        <p style={{ color: 'var(--text-muted)', margin: '0 0 5px 0' }}>Total Revenue</p>
-                        <h3 style={{ margin: 0, fontSize: '1.5rem' }}>₹{analytics.revenue.toFixed(2)}</h3>
-                    </div>
-                </div>
-                
-                <div className="glass-panel p-4" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                    <div style={{ padding: '15px', background: 'rgba(52, 152, 219, 0.1)', borderRadius: '12px', color: '#3498db' }}>
-                        <Package size={28} />
-                    </div>
-                    <div>
-                        <p style={{ color: 'var(--text-muted)', margin: '0 0 5px 0' }}>Completed Orders</p>
-                        <h3 style={{ margin: 0, fontSize: '1.5rem' }}>{analytics.orderCount}</h3>
+                        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 500 }}>Total Revenue</div>
+                        <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0F3F26', fontFamily: '"Playfair Display", serif' }}>₹{totalEarnings.toFixed(2)}</div>
                     </div>
                 </div>
 
-                <div className="glass-panel p-4" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                    <div style={{ padding: '15px', background: 'rgba(155, 89, 182, 0.1)', borderRadius: '12px', color: '#9b59b6' }}>
-                        <Activity size={28} />
+                {/* Orders Card */}
+                <div style={{ background: '#fff', borderRadius: '16px', padding: '24px', display: 'flex', alignItems: 'center', gap: '20px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
+                    <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#e3f2fd', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Package size={28} color="#1976d2" />
                     </div>
                     <div>
-                        <p style={{ color: 'var(--text-muted)', margin: '0 0 5px 0' }}>Top Performing Dish</p>
-                        <h3 style={{ margin: 0, fontSize: '1.5rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {analytics.topDishes.length > 0 ? analytics.topDishes[0].name : 'No data yet'}
+                        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 500 }}>Completed Orders</div>
+                        <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0F3F26', fontFamily: '"Playfair Display", serif' }}>{completedOrders}</div>
+                    </div>
+                </div>
+
+                {/* Top Dish Card */}
+                <div style={{ background: '#fff', borderRadius: '16px', padding: '24px', display: 'flex', alignItems: 'center', gap: '20px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
+                    <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: '#f3e5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Activity size={28} color="#8e24aa" />
+                    </div>
+                    <div style={{ overflow: 'hidden' }}>
+                        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 500 }}>Top Performing Dish</div>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0F3F26', fontFamily: '"Playfair Display", serif', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{topDish}</div>
+                    </div>
+                </div>
+            </div>
+
+            {/* AI Business Insights Section */}
+            <div style={{ marginBottom: '40px' }}>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0F3F26', margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '10px', fontFamily: '"Playfair Display", serif' }}>
+                    <Brain color="#ec407a" size={24} /> AI Business Insights
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                    
+                    {/* Demand Forecasting */}
+                    <div style={{ background: '#fff', borderRadius: '12px', padding: '24px', borderLeft: '4px solid #fbc02d', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#fbc02d', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Zap size={18} /> Demand Forecasting
                         </h3>
+                        <p style={{ fontSize: '0.9rem', color: '#424242', lineHeight: '1.6', margin: 0 }}>
+                            Expect a <strong>25% surge</strong> in orders this upcoming weekend due to a local festival in your delivery radius. Ensure you have adequate raw materials stocked.
+                        </p>
                     </div>
+
+                    {/* Pricing Suggestions */}
+                    <div style={{ background: '#fff', borderRadius: '12px', padding: '24px', borderLeft: '4px solid #e53935', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#e53935', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <BarChart2 size={18} /> Pricing Suggestions
+                        </h3>
+                        <p style={{ fontSize: '0.9rem', color: '#424242', lineHeight: '1.6', margin: 0 }}>
+                            Your most popular dish is currently priced 15% lower than the neighborhood average. Consider a slight price adjustment to increase your profit margins.
+                        </p>
+                    </div>
+
                 </div>
             </div>
 
-            <h3 style={{ fontSize: '1.4rem', marginBottom: '15px' }}>🧠 AI Business Insights</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '20px', marginBottom: '35px' }}>
-                <div className="glass-panel p-4" style={{ borderLeft: '4px solid #f1c40f', height: '100%', display: 'flex', flexDirection: 'column' }}>
-                    <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f1c40f', marginBottom: '10px' }}>
-                        <Zap size={20} /> Demand Forecasting
-                    </h4>
-                    <p style={{ color: 'var(--text-light)', fontSize: '0.95rem', lineHeight: '1.5', margin: 0, flex: 1 }}>
-                        Expect a <strong>25% surge</strong> in orders this upcoming weekend due to a local festival in your delivery radius. Ensure you have adequate raw materials stocked.
-                    </p>
-                </div>
-                
-                <div className="glass-panel p-4" style={{ borderLeft: '4px solid #e74c3c', height: '100%', display: 'flex', flexDirection: 'column' }}>
-                    <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#e74c3c', marginBottom: '10px' }}>
-                        <BarChart2 size={20} /> Pricing Suggestions
-                    </h4>
-                    <p style={{ color: 'var(--text-light)', fontSize: '0.95rem', lineHeight: '1.5', margin: 0, flex: 1 }}>
-                        Your most popular dish is currently priced 15% lower than the neighborhood average. Consider a slight price adjustment to increase your profit margins.
-                    </p>
+            {/* Chef Resource Center Section */}
+            <div>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0F3F26', margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '10px', fontFamily: '"Playfair Display", serif' }}>
+                    <Layers color="#1976d2" size={24} /> Chef Resource Center
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+                    
+                    {/* Resource 1 */}
+                    <div style={{ background: '#fff', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ height: '140px', background: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid #f0f0f0' }}>
+                            <Camera size={48} color="#757575" strokeWidth={1.5} />
+                        </div>
+                        <div style={{ padding: '20px' }}>
+                            <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0F3F26', margin: '0 0 8px 0', fontFamily: '"Playfair Display", serif' }}>
+                                Food Photography 101
+                            </h3>
+                            <p style={{ fontSize: '0.85rem', color: '#757575', lineHeight: '1.6', margin: 0 }}>
+                                Learn how to plate and shoot your dishes using just your smartphone for mouth-watering menu pictures.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Resource 2 */}
+                    <div style={{ background: '#fff', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ height: '140px', background: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid #f0f0f0' }}>
+                            <Box size={48} color="#757575" strokeWidth={1.5} />
+                        </div>
+                        <div style={{ padding: '20px' }}>
+                            <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0F3F26', margin: '0 0 8px 0', fontFamily: '"Playfair Display", serif' }}>
+                                Packaging Guidance
+                            </h3>
+                            <p style={{ fontSize: '0.85rem', color: '#757575', lineHeight: '1.6', margin: 0 }}>
+                                Best practices for spill-proof, eco-friendly, and temperature-retaining packaging to ensure 5-star ratings.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Resource 3 */}
+                    <div style={{ background: '#fff', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ height: '140px', background: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid #f0f0f0' }}>
+                            <MessageSquare size={48} color="#757575" strokeWidth={1.5} />
+                        </div>
+                        <div style={{ padding: '20px' }}>
+                            <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0F3F26', margin: '0 0 8px 0', fontFamily: '"Playfair Display", serif' }}>
+                                Social Media Marketing
+                            </h3>
+                            <p style={{ fontSize: '0.85rem', color: '#757575', lineHeight: '1.6', margin: 0 }}>
+                                Templates and strategies to promote your TasteNova kitchen on Instagram and local community groups.
+                            </p>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
-            <h3 style={{ fontSize: '1.4rem', marginBottom: '15px' }}>📚 Chef Resource Center</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '20px' }}>
-                <div className="glass-panel p-4 hover-lift" style={{ cursor: 'pointer', transition: 'transform 0.2s', border: '1px solid var(--border)', height: '100%', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '12px', height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '15px', flexShrink: 0 }}>
-                        <Camera size={40} color="var(--text-muted)" />
-                    </div>
-                    <h4 style={{ marginBottom: '5px' }}>Food Photography 101</h4>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0, flex: 1 }}>Learn how to plate and shoot your dishes using just your smartphone for mouth-watering menu pictures.</p>
-                </div>
-
-                <div className="glass-panel p-4 hover-lift" style={{ cursor: 'pointer', transition: 'transform 0.2s', border: '1px solid var(--border)', height: '100%', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '12px', height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '15px', flexShrink: 0 }}>
-                        <Presentation size={40} color="var(--text-muted)" />
-                    </div>
-                    <h4 style={{ marginBottom: '5px' }}>Packaging Guidance</h4>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0, flex: 1 }}>Best practices for spill-proof, eco-friendly, and temperature-retaining packaging to ensure 5-star ratings.</p>
-                </div>
-
-                <div className="glass-panel p-4 hover-lift" style={{ cursor: 'pointer', transition: 'transform 0.2s', border: '1px solid var(--border)', height: '100%', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '12px', height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '15px', flexShrink: 0 }}>
-                        <MessageSquare size={40} color="var(--text-muted)" />
-                    </div>
-                    <h4 style={{ marginBottom: '5px' }}>Social Media Marketing</h4>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0, flex: 1 }}>Templates and strategies to promote your TasteNova kitchen on Instagram and local community groups.</p>
-                </div>
-            </div>
         </div>
     );
 };

@@ -12,7 +12,19 @@ const walletSchema = new mongoose.Schema({
         enum: ['chef', 'delivery'],
         required: true
     },
-    available_balance: {
+    available_balance: { // deprecated, use earningsBalance for withdrawable
+        type: Number,
+        default: 0
+    },
+    earningsBalance: {
+        type: Number,
+        default: 0
+    },
+    referralCredits: {
+        type: Number,
+        default: 0
+    },
+    promotionalCredits: {
         type: Number,
         default: 0
     },
@@ -31,7 +43,10 @@ const walletSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 walletSchema.pre('save', function(next) {
-    this.total_balance = this.available_balance + this.pending_balance + this.locked_balance;
+    // total_balance logic including all balances
+    this.total_balance = this.earningsBalance + this.referralCredits + this.promotionalCredits + this.pending_balance + this.locked_balance;
+    // For backwards compatibility until full migration
+    this.available_balance = this.earningsBalance;
     next();
 });
 

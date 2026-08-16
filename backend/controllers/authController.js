@@ -4,11 +4,11 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
 const generateAccessToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '15m' });
+    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
 const generateRefreshToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
+    return jwt.sign({ id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '30d' });
 };
 
 const setAuthCookies = (res, accessToken, refreshToken) => {
@@ -61,6 +61,12 @@ const authUser = async (req, res) => {
             // Save refresh token to user in DB
             user.refreshTokens = user.refreshTokens || [];
             user.refreshTokens.push(refreshToken);
+
+            // Force kitchen closed on new login session so they have to manually open it
+            if (user.role === 'chef') {
+                user.isOpen = false;
+            }
+
             await user.save();
 
             setAuthCookies(res, accessToken, refreshToken);
@@ -72,6 +78,10 @@ const authUser = async (req, res) => {
                 role: user.role,
                 status: user.status,
                 addresses: user.addresses,
+                city: user.city,
+                assignedCities: user.assignedCities,
+                assignedZones: user.assignedZones,
+                customRole: user.customRole,
                 // Do not send tokens in response body anymore for web clients (handled by cookies)
                 // However, Mobile clients might need it in the response if they don't use cookies. 
                 // We'll return it for mobile compatibility.
@@ -249,7 +259,7 @@ const refreshToken = async (req, res) => {
 // @access  Private
 const logout = async (req, res) => {
     const token = req.cookies.refreshToken || req.body.refreshToken;
-
+    
     if (req.user && token) {
         // Remove token from DB
         req.user.refreshTokens = req.user.refreshTokens.filter(rt => rt !== token);

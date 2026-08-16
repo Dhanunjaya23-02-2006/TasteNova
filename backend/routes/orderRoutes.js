@@ -10,7 +10,8 @@ const {
     updateDeliveryStatus,
     getAssignedOrders,
     getDeliveryEarnings,
-    processRefund
+    processRefund,
+    getChefStats
 } = require('../controllers/orderController');
 const { protect, admin, chef, delivery } = require('../middleware/authMiddleware');
 
@@ -18,6 +19,7 @@ router.route('/').post(protect, addOrderItems).get(protect, chef, getOrders);
 router.route('/myorders').get(protect, getMyOrders);
 router.route('/deliveryorders').get(protect, delivery, getAssignedOrders);
 router.route('/deliveryearnings').get(protect, delivery, getDeliveryEarnings);
+router.route('/chef/stats').get(protect, chef, getChefStats);
 router.route('/:id').get(protect, getOrderById);
 router.route('/:id/pay').put(protect, updateOrderToPaid);
 router.route('/:id/status').put(protect, updateOrderStatus); // Update: Removed strict 'chef' middleware since admin/subadmin also updates status

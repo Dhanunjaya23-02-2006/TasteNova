@@ -7,19 +7,48 @@ const userSchema = mongoose.Schema({
     phone: { type: String, required: true },
     role: { type: String, enum: ['user', 'admin', 'subadmin', 'delivery', 'chef', 'superadmin'], default: 'user' },
     status: { type: String, enum: ['pending', 'active', 'suspended'], default: 'active' },
-    city: { type: mongoose.Schema.Types.ObjectId, ref: 'City' }, // FK to City table for scoping subadmins, chefs, deliveries, users
+    city: { type: mongoose.Schema.Types.ObjectId, ref: 'City' }, // Primary single city (Customers, Chefs, Delivery)
+    assignedCities: [{ type: mongoose.Schema.Types.ObjectId, ref: 'City' }], // Array of cities for Admin Role
+    assignedZones: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Zone' }], // Array of zones for Subadmin Role
     businessName: { type: String }, // For Chefs/Kitchens
     description: { type: String }, // For Chefs/Kitchens
+    vehicleType: { type: String }, // For Delivery Partners
+    isOnline: { type: Boolean, default: false }, // For Delivery Partners / Chefs
+    currentLocation: {
+        lat: { type: Number },
+        lng: { type: Number }
+    }, // Real-time tracking for Delivery Partners
     kitchenImage: { type: String }, // For Chefs/Kitchens
+    profilePic: { type: String }, // General Profile Picture (Customers/Chefs)
     rating: { type: Number, default: 0 },
     numReviews: { type: Number, default: 0 },
     addresses: [{
-        streetAddress: { type: String, required: true },
-        label: { type: String, default: 'Home' }, // e.g. Home, Work, Other
+        label: { type: String, enum: ['Home', 'Work', 'Other'], default: 'Home' },
+        receiverName: { type: String, required: true, trim: true },
+        phone: { type: String, required: true },
+        houseFlat: { type: String, required: true },
+        floor: { type: String },
+        building: { type: String },
+        street: { type: String },
+        area: { type: String, required: true },
+        landmark: { type: String },
+        city: { type: String, required: true },
+        state: { type: String, required: true },
+        pincode: { type: String, required: true },
+        formattedAddress: { type: String, required: true },
         location: {
-            lat: { type: Number, required: true },
-            lng: { type: Number, required: true }
-        }
+            type: { type: String, enum: ['Point'], default: 'Point' },
+            coordinates: { type: [Number], required: true } // [longitude, latitude]
+        },
+        deliveryInstructions: { type: String },
+        isDefault: { type: Boolean, default: false }
+    }],
+    paymentMethods: [{
+        cardNumber: { type: String, required: true }, // Should store masked or token in prod
+        cardName: { type: String, required: true },
+        expiryDate: { type: String, required: true },
+        cardType: { type: String, default: 'VISA' },
+        isDefault: { type: Boolean, default: false }
     }],
     isEmailVerified: { type: Boolean, default: false },
     isPhoneVerified: { type: Boolean, default: false },
@@ -27,6 +56,16 @@ const userSchema = mongoose.Schema({
     phoneOtp: { type: String },
     resetPasswordOtp: { type: String },
     otpExpires: { type: Date },
+    documents: {
+        idProof: { type: String },
+        fssaiCertificate: { type: String }
+    },
+    bankDetails: {
+        accountName: { type: String },
+        accountNumber: { type: String },
+        ifscCode: { type: String },
+        bankName: { type: String }
+    },
     // Verification Flags for Chefs
     isIdVerified: { type: Boolean, default: false },
     isFssaiVerified: { type: Boolean, default: false },
@@ -40,10 +79,12 @@ const userSchema = mongoose.Schema({
         coordinates: { type: [Number] } // [longitude, latitude]
     },
     deliveryRadius: { type: Number, default: 6, min: 2, max: 10 }, // Chef's delivery radius in km
-
+    isOpen: { type: Boolean, default: false }, // For toggling kitchen status instantly
+    maxOrdersPerSlot: { type: Number, default: 20 }, // For throttling orders
     // Finance / Payouts
     walletBalance: { type: Number, default: 0 }, // For Customers
     commissionRate: { type: Number }, // Specific Chef Commission Override (optional)
+    referralCode: { type: String, unique: true, sparse: true }, // For Invite & Earn
     
     // For Chefs: Operating Hours and Cutoffs
     operatingHours: {
@@ -68,8 +109,9 @@ const userSchema = mongoose.Schema({
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
 }, { timestamps: true });
 
-// Add Geospatial Index
+// Add Geospatial Indexes
 userSchema.index({ kitchenLocation: '2dsphere' });
+userSchema.index({ 'addresses.location': '2dsphere' });
 
 // Add Compound Index for filtering users
 userSchema.index({ role: 1, city: 1, status: 1 });

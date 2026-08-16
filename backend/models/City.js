@@ -11,7 +11,10 @@ const citySchema = new mongoose.Schema({
     commissionRate: { type: Number }, // City-specific Commission Override (optional)
     baseDeliveryFee: { type: Number, default: 40 }, // Base fee for delivery
     perKmFee: { type: Number, default: 10 }, // Fee per extra km
-    freeDeliveryThreshold: { type: Number, default: 500 } // Free delivery over this amount
+    freeDeliveryThreshold: { type: Number, default: 500 }, // Free delivery over this amount
+    zones: [{ type: String }], // e.g., 'Gachibowli', 'Kondapur'
+    subAdminId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    refundThreshold: { type: Number, default: 500 }
 }, { timestamps: true });
 
 // Prevent duplicate cities in the same state

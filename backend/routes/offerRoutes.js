@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { getOffers, createOffer, updateOfferStatus } = require('../controllers/offerController');
+const { getOffers, getPublicOffers, createOffer, updateOfferStatus } = require('../controllers/offerController');
 const { protect } = require('../middleware/authMiddleware');
+
+router.get('/public', getPublicOffers);
 
 router.route('/')
     .get(protect, getOffers)

@@ -1,21 +1,22 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { API_URL } from '../../config';
-import { motion } from 'framer-motion';
-import { Plus, Edit3, Trash2 } from 'lucide-react';
+import { Plus, Edit3, Trash2, Search, MoreHorizontal, CheckCircle, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const MenuTab = () => {
     const { user } = useContext(AuthContext);
     const [menuItems, setMenuItems] = useState([]);
+    const [filter, setFilter] = useState('All');
+    const [searchTerm, setSearchTerm] = useState('');
+    
+    // Existing form state (kept for functionality, though we'll hide it behind a modal toggle in a real app)
+    const [isFormOpen, setIsFormOpen] = useState(false);
     const [menuData, setMenuData] = useState({ name: '', description: '', price: '', offerPrice: '', ingredientCost: '', image: '', available: true });
-    const [itemStatus, setItemStatus] = useState('');
     const [editingItemId, setEditingItemId] = useState(null);
 
     useEffect(() => {
-        if (user) {
-            fetchMenu();
-        }
+        if (user) fetchMenu();
     }, [user]);
 
     const fetchMenu = async () => {
@@ -27,133 +28,261 @@ const MenuTab = () => {
 
     const handleSaveMenu = async (e) => {
         e.preventDefault();
-        setItemStatus('Saving...');
         try {
-            const url = editingItemId ? `${API_URL}/menu/${editingItemId}` : `${API_URL}/menu`;
             const method = editingItemId ? 'PUT' : 'POST';
+            const url = editingItemId ? `${API_URL}/menu/${editingItemId}` : `${API_URL}/menu`;
+            const payload = { ...menuData, chef: user._id };
+            
             const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` },
-                body: JSON.stringify(menuData)
+                method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` },
+                body: JSON.stringify(payload)
             });
+            
             if (res.ok) {
-                toast.success(editingItemId ? 'Item updated!' : 'Item added successfully!');
+                toast.success(editingItemId ? 'Menu item updated' : 'Menu item added');
+                fetchMenu();
+                setIsFormOpen(false);
                 setMenuData({ name: '', description: '', price: '', offerPrice: '', ingredientCost: '', image: '', available: true });
                 setEditingItemId(null);
-                fetchMenu();
-                setItemStatus('');
-            } else { setItemStatus('Failed to save item'); }
-        } catch (error) { setItemStatus('Error saving item'); }
+            } else {
+                toast.error('Failed to save menu item');
+            }
+        } catch (error) { toast.error('An error occurred'); }
     };
 
-    const handleEditItem = (item) => {
-        setEditingItemId(item._id);
-        setMenuData({ name: item.name, description: item.description, price: item.price, offerPrice: item.offerPrice || '', ingredientCost: item.ingredientCost || '', image: item.image, available: item.available !== false });
-        window.scrollTo(0, 0);
-    };
+    const [itemToDelete, setItemToDelete] = useState(null);
 
-    const handleCancelEdit = () => {
-        setEditingItemId(null);
-        setMenuData({ name: '', description: '', price: '', offerPrice: '', ingredientCost: '', image: '', available: true });
-    };
-
-    const handleDeleteItem = (id) => {
-        if (window.confirm('Are you sure you want to delete this menu item?')) {
-            deleteItem(id);
-        }
-    };
-
-    const deleteItem = async (id) => {
+    const executeDelete = async (id) => {
         try {
             const res = await fetch(`${API_URL}/menu/${id}`, {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${user.token}` }
+                method: 'DELETE', headers: { Authorization: `Bearer ${user.token}` }
             });
             if (res.ok) {
-                toast.success('Item removed');
+                toast.success('Item deleted successfully');
                 fetchMenu();
+                setItemToDelete(null);
+            } else {
+                toast.error('Failed to delete item');
             }
-        } catch (error) { toast.error('Error deleting item'); }
+        } catch (error) { toast.error('An error occurred while deleting'); }
     };
 
+    const handleDelete = (id) => {
+        setItemToDelete(id);
+    };
+
+    const handleDuplicate = async (item) => {
+        const payload = { name: `${item.name} (Copy)`, description: item.description, price: item.price, offerPrice: item.offerPrice, ingredientCost: item.ingredientCost, image: item.image, available: item.available, chef: user._id };
+        try {
+            const res = await fetch(`${API_URL}/menu`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                toast.success('Dish duplicated');
+                fetchMenu();
+            } else {
+                toast.error('Failed to duplicate item');
+            }
+        } catch (error) { toast.error('An error occurred'); }
+    };
+
+    const openEdit = (item) => {
+        setMenuData({ name: item.name, description: item.description, price: item.price, offerPrice: item.offerPrice || '', ingredientCost: item.ingredientCost || '', image: item.image || '', available: item.available });
+        setEditingItemId(item._id);
+        setIsFormOpen(true);
+    };
+
+    const activeCount = menuItems.filter(m => m.available).length;
+    const inactiveCount = menuItems.length - activeCount;
+
+    const filteredItems = menuItems.filter(m => {
+        if (filter === 'Active' && !m.available) return false;
+        if (filter === 'Inactive' && m.available) return false;
+        if (searchTerm && !m.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+        return true;
+    });
+
+    const tabStyle = (isActive) => ({
+        padding: '8px 16px',
+        borderRadius: '8px',
+        fontSize: '0.9rem',
+        fontWeight: 600,
+        cursor: 'pointer',
+        background: isActive ? 'rgba(39, 174, 96, 0.08)' : 'transparent',
+        color: isActive ? '#0F3F26' : 'var(--text-muted)',
+        border: 'none',
+        transition: 'all 0.2s ease'
+    });
+
     return (
-        <motion.div 
-            key="menu"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="flex gap-4"
-            style={{ flexWrap: 'wrap' }}
-        >
-            <div className="glass-panel" style={{ flex: '1 1 400px', padding: '24px', height: 'fit-content', boxShadow: 'var(--shadow-floating)' }}>
-                <h3 className="mb-4">{editingItemId ? 'Update Dish' : 'Add New Signature Dish'}</h3>
-                {itemStatus && <p style={{ color: 'var(--primary-color)' }}>{itemStatus}</p>}
-                <form onSubmit={handleSaveMenu}>
-                    <div style={{ marginBottom: '16px' }}>
-                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: 'var(--text-dark)', fontSize: '0.9rem' }}>Dish Name</label>
-                        <input className="form-control" type="text" value={menuData.name} onChange={(e) => setMenuData({ ...menuData, name: e.target.value })} required placeholder="e.g. Butter Chicken Delight" />
-                    </div>
-                    <div style={{ marginBottom: '16px' }}>
-                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: 'var(--text-dark)', fontSize: '0.9rem' }}>Short Description</label>
-                        <textarea className="form-control" rows="2" value={menuData.description} onChange={(e) => setMenuData({ ...menuData, description: e.target.value })} required />
-                    </div>
-                    <div style={{ display: 'flex', gap: '15px' }}>
-                        <div style={{ marginBottom: '16px', flex: 1 }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: 'var(--text-dark)', fontSize: '0.9rem' }}>Price (₹)</label>
-                            <input className="form-control" type="number" value={menuData.price} onChange={(e) => setMenuData({ ...menuData, price: e.target.value })} required />
-                        </div>
-                        <div style={{ marginBottom: '16px', flex: 1 }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: 'var(--text-dark)', fontSize: '0.9rem' }}>Offer Price</label>
-                            <input className="form-control" type="number" value={menuData.offerPrice} onChange={(e) => setMenuData({ ...menuData, offerPrice: e.target.value })} />
-                        </div>
-                        <div style={{ marginBottom: '16px', flex: 1 }}>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: 'var(--text-dark)', fontSize: '0.9rem' }}>Ing. Cost (₹)</label>
-                            <input className="form-control" type="number" value={menuData.ingredientCost} onChange={(e) => setMenuData({ ...menuData, ingredientCost: e.target.value })} required />
-                        </div>
-                    </div>
-                    <div style={{ marginBottom: '16px' }}>
-                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: 'var(--text-dark)', fontSize: '0.9rem' }}>Image URL</label>
-                        <input className="form-control" type="text" value={menuData.image} onChange={(e) => setMenuData({ ...menuData, image: e.target.value })} required />
-                    </div>
-                    <div className="flex gap-2">
-                        <button type="submit" className="btn btn-primary" style={{ flex: 2 }}>
-                            {editingItemId ? <><Edit3 size={18} style={{ marginRight: '8px' }} /> Update</> : <><Plus size={18} style={{ marginRight: '8px' }} /> Publish Dish</>}
-                        </button>
-                        {editingItemId && <button type="button" className="btn btn-secondary" onClick={handleCancelEdit} style={{ flex: 1 }}>Cancel</button>}
-                    </div>
-                </form>
+        <div>
+            {/* Header */}
+            <div style={{ marginBottom: '24px' }}>
+                <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0F3F26', margin: '0 0 8px 0' }}>Menu Management</h1>
+                <p style={{ color: 'var(--text-muted)', margin: 0 }}>Add, edit or remove dishes from your menu.</p>
             </div>
 
-            <div className="glass-panel" style={{ flex: '2 1 600px', padding: '24px', boxShadow: 'var(--shadow-floating)' }}>
-                <div className="flex justify-between align-center mb-4">
-                    <h3 style={{ margin: 0 }}>Current Menu</h3>
-                    <span className="status-badge status-info">{menuItems.length} Items</span>
+            {/* Controls Row */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+                <div style={{ display: 'flex', gap: '8px', background: '#fff', padding: '4px', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+                    <button style={tabStyle(filter === 'All')} onClick={() => setFilter('All')}>All Dishes ({menuItems.length})</button>
+                    <button style={tabStyle(filter === 'Active')} onClick={() => setFilter('Active')}>Active ({activeCount})</button>
+                    <button style={tabStyle(filter === 'Inactive')} onClick={() => setFilter('Inactive')}>Inactive ({inactiveCount})</button>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px' }}>
-                    {menuItems.map(item => (
-                        <motion.div 
-                            layout
-                            key={item._id} 
-                            className="glass-panel animate-fade-up"
-                            style={{ padding: '15px', boxShadow: 'var(--shadow-floating)' }}
-                        >
-                            <img loading="lazy" src={item.image} alt={item.name} style={{ width: '100%', height: '140px', borderRadius: '12px', objectFit: 'cover', marginBottom: '12px' }} />
-                            <div className="flex justify-between align-center mb-2">
-                                <span style={{ fontWeight: 'bold' }}>{item.name}</span>
-                                <div className="flex align-center gap-1">
-                                    {item.offerPrice && <span style={{ textDecoration: 'line-through', color: 'var(--text-muted)', fontSize: '0.8rem' }}>₹{item.price}</span>}
-                                    <span style={{ color: 'var(--success)', fontWeight: 'bold' }}>₹{item.offerPrice || item.price}</span>
-                                </div>
-                            </div>
-                            <div className="flex gap-2 mt-3">
-                                <button className="btn btn-secondary" onClick={() => handleEditItem(item)} style={{ flex: 1, padding: '8px', fontSize: '0.8rem' }}>Edit</button>
-                                <button className="btn btn-outline" onClick={() => handleDeleteItem(item._id)} style={{ flex: 1, padding: '8px', fontSize: '0.8rem', color: 'var(--error)', borderColor: 'var(--error)' }}><Trash2 size={14} /></button>
-                            </div>
-                        </motion.div>
-                    ))}
+                
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                    <div style={{ position: 'relative' }}>
+                        <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                        <input 
+                            type="text" 
+                            placeholder="Search dishes..." 
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            style={{ padding: '8px 12px 8px 36px', borderRadius: '8px', border: '1px solid var(--border-subtle)', outline: 'none', width: '200px' }}
+                        />
+                    </div>
+                    <button onClick={() => { setEditingItemId(null); setMenuData({ name: '', description: '', price: '', offerPrice: '', ingredientCost: '', image: '', available: true }); setIsFormOpen(true); }} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '8px', fontWeight: 600 }}>
+                        <Plus size={16} /> Add New Dish
+                    </button>
                 </div>
             </div>
-        </motion.div>
+
+            {/* Table Area */}
+            <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid var(--border-subtle)', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                        <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                            <th style={{ textAlign: 'left', padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.85rem' }}>Dish</th>
+                            <th style={{ textAlign: 'left', padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.85rem' }}>Category</th>
+                            <th style={{ textAlign: 'left', padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.85rem' }}>Price</th>
+                            <th style={{ textAlign: 'left', padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.85rem' }}>Offer Price</th>
+                            <th style={{ textAlign: 'left', padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.85rem' }}>Status</th>
+                            <th style={{ textAlign: 'center', padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.85rem' }}>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredItems.length === 0 ? (
+                            <tr>
+                                <td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No dishes found.</td>
+                            </tr>
+                        ) : (
+                            filteredItems.map(item => (
+                                <tr key={item._id} style={{ borderBottom: '1px solid var(--border-subtle)', transition: 'background 0.2s' }}>
+                                    <td style={{ padding: '16px 24px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: '#eee', overflow: 'hidden' }}>
+                                                {item.image ? (
+                                                    <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                ) : (
+                                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ccc' }}>
+                                                        <img src={`https://api.dicebear.com/7.x/identicon/svg?seed=${item._id}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="dish" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <span style={{ fontWeight: 700, color: '#0F3F26', fontSize: '0.95rem' }}>{item.name}</span>
+                                        </div>
+                                    </td>
+                                    <td style={{ padding: '16px 24px', color: 'var(--text-main)', fontSize: '0.9rem' }}>
+                                        {/* Mock category if undefined */}
+                                        {item.category || (item.name.toLowerCase().includes('biryani') ? 'Biryani' : item.name.toLowerCase().includes('thali') ? 'Thali' : 'Main Course')}
+                                    </td>
+                                    <td style={{ padding: '16px 24px', color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: 600 }}>
+                                        ₹{item.price}
+                                    </td>
+                                    <td style={{ padding: '16px 24px', color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: 600 }}>
+                                        {item.offerPrice ? `₹${item.offerPrice}` : '-'}
+                                    </td>
+                                    <td style={{ padding: '16px 24px' }}>
+                                        <span style={{ 
+                                            color: item.available ? '#27ae60' : '#e74c3c', 
+                                            fontWeight: 700, 
+                                            fontSize: '0.85rem' 
+                                        }}>
+                                            {item.available ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </td>
+                                    <td style={{ padding: '16px 24px', textAlign: 'center' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+                                            <button onClick={() => openEdit(item)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+                                                <Edit3 size={16} />
+                                            </button>
+                                            <button onClick={() => handleDelete(item._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--error)' }}>
+                                                <Trash2 size={16} />
+                                            </button>
+                                            <button onClick={() => handleDuplicate(item)} title="Duplicate Dish" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+                                                <MoreHorizontal size={16} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+                
+                {/* Pagination footer */}
+                <div style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-subtle)', background: '#F8F9FA' }}>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Showing {filteredItems.length > 0 ? 1 : 0} to {filteredItems.length} of {menuItems.length} dishes</span>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <button style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>&lt;</button>
+                        <span style={{ padding: '4px 10px', border: '1px solid #27ae60', color: '#27ae60', borderRadius: '4px', fontWeight: 700 }}>1</span>
+                        <button style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>&gt;</button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Modal for adding/editing (Simple inline overlay for now) */}
+            {isFormOpen && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ background: '#fff', padding: '32px', borderRadius: '16px', width: '500px', maxWidth: '90%' }}>
+                        <h2 style={{ margin: '0 0 24px 0', fontSize: '1.5rem', color: '#0F3F26' }}>{editingItemId ? 'Edit Dish' : 'Add New Dish'}</h2>
+                        <form onSubmit={handleSaveMenu} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 600 }}>Dish Name</label>
+                                <input type="text" className="input" required value={menuData.name} onChange={e => setMenuData({...menuData, name: e.target.value})} style={{ width: '100%' }} />
+                            </div>
+                            <div style={{ display: 'flex', gap: '16px' }}>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 600 }}>Price (₹)</label>
+                                    <input type="number" className="input" required value={menuData.price} onChange={e => setMenuData({...menuData, price: e.target.value})} style={{ width: '100%' }} />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 600 }}>Offer Price (₹)</label>
+                                    <input type="number" className="input" value={menuData.offerPrice} onChange={e => setMenuData({...menuData, offerPrice: e.target.value})} style={{ width: '100%' }} />
+                                </div>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 600 }}>Image URL</label>
+                                <input type="text" className="input" value={menuData.image} onChange={e => setMenuData({...menuData, image: e.target.value})} style={{ width: '100%' }} />
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                                <input type="checkbox" id="available" checked={menuData.available} onChange={e => setMenuData({...menuData, available: e.target.checked})} />
+                                <label htmlFor="available" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Available (Active)</label>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+                                <button type="button" onClick={() => setIsFormOpen(false)} className="btn" style={{ background: '#eee', color: 'var(--text-main)' }}>Cancel</button>
+                                <button type="submit" className="btn btn-primary">Save Dish</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {itemToDelete && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ background: '#fff', padding: '32px', borderRadius: '16px', width: '400px', maxWidth: '90%' }}>
+                        <h2 style={{ margin: '0 0 16px 0', fontSize: '1.4rem', color: '#0F3F26' }}>Delete Dish</h2>
+                        <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>Are you sure you want to delete this dish? This action cannot be undone.</p>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                            <button onClick={() => setItemToDelete(null)} className="btn" style={{ background: '#eee', color: 'var(--text-main)' }}>Cancel</button>
+                            <button onClick={() => executeDelete(itemToDelete)} className="btn btn-primary" style={{ background: '#e74c3c', border: 'none' }}>Yes, Delete</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 };
 

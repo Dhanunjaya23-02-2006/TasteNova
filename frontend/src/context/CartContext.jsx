@@ -5,23 +5,27 @@ export const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
     const { user } = useContext(AuthContext);
-    const [cartItems, setCartItems] = useState([]);
-
-    // Load cart when user changes (login or app load)
-    useEffect(() => {
-        if (user && user._id) {
-            const savedCart = localStorage.getItem(`tastenova_cart_${user._id}`);
-            if (savedCart) {
-                try {
-                    setCartItems(JSON.parse(savedCart));
-                } catch (e) {
-                    setCartItems([]);
+    const [cartItems, setCartItems] = useState(() => {
+        const storedUser = localStorage.getItem('userInfo');
+        if (storedUser) {
+            try {
+                const parsedUser = JSON.parse(storedUser);
+                if (parsedUser && parsedUser._id) {
+                    const savedCart = localStorage.getItem(`tastenova_cart_${parsedUser._id}`);
+                    if (savedCart) {
+                        return JSON.parse(savedCart);
+                    }
                 }
-            } else {
-                setCartItems([]);
+            } catch (e) {
+                console.error('Error parsing cart from storage', e);
             }
-        } else {
-            // Unauthenticated user should have empty cart
+        }
+        return [];
+    });
+
+    // Clear cart if user logs out
+    useEffect(() => {
+        if (!user) {
             setCartItems([]);
         }
     }, [user]);

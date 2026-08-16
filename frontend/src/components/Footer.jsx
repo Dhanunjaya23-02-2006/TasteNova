@@ -1,101 +1,80 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Phone, Mail, MapPin } from 'lucide-react';
+import { Instagram, Facebook, Twitter, Phone, Mail, MapPin } from 'lucide-react';
 
 const Footer = () => {
     return (
-        <footer style={{
-            background: 'var(--bg-surface)',
-            borderTop: '1px solid var(--border-subtle)',
-            padding: '60px 5% 30px',
-            marginTop: 'auto',
-            color: 'var(--text-main)',
-            position: 'relative',
-            overflow: 'hidden'
-        }}>
-            {/* Subtle background glow */}
-            <div style={{
-                position: 'absolute',
-                top: '-50%',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: '600px',
-                height: '600px',
-                background: 'radial-gradient(circle, rgba(255, 87, 34, 0.03) 0%, transparent 70%)',
-                pointerEvents: 'none',
-                zIndex: 0
-            }}></div>
-
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                gap: '40px',
-                position: 'relative',
-                zIndex: 1,
-                maxWidth: '1280px',
-                margin: '0 auto'
-            }}>
-                <div className="brand-section">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-                        <img src="/logo.png" alt="TasteNova Logo" style={{ height: '60px', width: '60px', objectFit: 'contain', borderRadius: '50%', border: '1px solid rgba(212, 175, 55, 0.3)' }} />
-                        <span className="gradient-text" style={{ fontSize: '2rem', fontWeight: '800' }}>TasteNova</span>
+        <footer style={{ background: 'var(--bg-surface)', borderTop: '1px solid var(--border-subtle)', padding: '60px 0 30px', marginTop: 'auto' }}>
+            <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '40px', paddingBottom: '0' }}>
+                
+                {/* Brand */}
+                <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+                        <div style={{ width: '40px', height: '40px', background: 'var(--text-main)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', fontWeight: 'bold', fontSize: '1.2rem', border: '2px solid var(--primary)' }}>
+                            T
+                        </div>
+                        <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary)', fontFamily: "'DM Serif Display', serif" }}>TasteNova</span>
                     </div>
-                    <p style={{ color: 'var(--text-muted)', lineHeight: '1.7', fontSize: '0.95rem', maxWidth: '300px' }}>
-                        Delivering home-cooked goodness right to your doorstep. Fresh, hygienic, and made with love by local culinary artists.
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '20px', lineHeight: 1.6 }}>
+                        Connecting you with talented home chefs who cook with love and deliver happiness to your doorstep.
                     </p>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                        <a href="#" style={{ color: 'var(--text-muted)' }}><Instagram size={20} /></a>
+                        <a href="#" style={{ color: 'var(--text-muted)' }}><Facebook size={20} /></a>
+                        <a href="#" style={{ color: 'var(--text-muted)' }}><Twitter size={20} /></a>
+                    </div>
                 </div>
 
-                <div className="categories-section">
-                    <h4 style={{ fontSize: '1.25rem', marginBottom: '20px', color: 'var(--text-main)', fontWeight: '600' }}>Quick Bite Categories</h4>
+                {/* Quick Links */}
+                <div>
+                    <h4 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '20px', color: 'var(--text-main)' }}>Quick Links</h4>
                     <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {['🌶️ Authentic Starters', '🍜 Asian Fusion', '🥘 Premium Biryanis', '🍰 Homemade Desserts'].map((item, index) => (
-                            <li key={index}>
-                                <Link to="/" style={{ 
-                                    color: 'var(--text-muted)', 
-                                    textDecoration: 'none', 
-                                    transition: 'var(--transition-fast)',
-                                    display: 'inline-block'
-                                }} 
-                                onMouseOver={e => { e.target.style.color = 'var(--primary)'; e.target.style.transform = 'translateX(5px)'; }} 
-                                onMouseOut={e => { e.target.style.color = 'var(--text-muted)'; e.target.style.transform = 'translateX(0)'; }}>
-                                    {item}
-                                </Link>
-                            </li>
-                        ))}
+                        <li><Link to="/about" style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>About Us</Link></li>
+                        <li><Link to="/how-it-works" style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>How It Works</Link></li>
+                        <li><Link to="/for-chefs" style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>For Chefs</Link></li>
+                        <li><Link to="/cities" style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>Cities We Serve</Link></li>
+                        <li><Link to="/contact" style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>Contact Us</Link></li>
                     </ul>
                 </div>
 
-                <div className="contact-section">
-                    <h4 style={{ fontSize: '1.25rem', marginBottom: '20px', color: 'var(--text-main)', fontWeight: '600' }}>Contact & Support</h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', color: 'var(--text-muted)' }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                            <Phone size={18} color="var(--primary)" style={{ marginTop: '3px' }} />
-                            <div>
-                                <a href="tel:+918639275907" style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'var(--transition-fast)' }} onMouseOver={e => e.target.style.color = 'var(--primary)'} onMouseOut={e => e.target.style.color = 'var(--text-muted)'}>
-                                    +91 86392 75907
-                                </a>
-                            </div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                            <Mail size={18} color="var(--primary)" style={{ marginTop: '3px' }} />
-                            <div>
-                                <a href="mailto:dhanunjayaambati5@gmail.com" style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'var(--transition-fast)' }} onMouseOver={e => e.target.style.color = 'var(--primary)'} onMouseOut={e => e.target.style.color = 'var(--text-muted)'}>
-                                    dhanunjayaambati5@gmail.com
-                                </a>
-                            </div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                            <MapPin size={18} color="var(--primary)" style={{ marginTop: '3px' }} />
-                            <div style={{ fontSize: '0.95rem', lineHeight: '1.5' }}>
-                                HQ: Siddiq Nagar, Gachibowli,<br />Hyderabad, India.
-                            </div>
-                        </div>
-                    </div>
+                {/* For Chefs */}
+                <div>
+                    <h4 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '20px', color: 'var(--text-main)' }}>For Chefs</h4>
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <li><Link to="/chef/register" style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>Become a Chef</Link></li>
+                        <li><Link to="/login" style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>Chef Login</Link></li>
+                        <li><Link to="/resources" style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>Resources</Link></li>
+                        <li><Link to="/support" style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>Help & Support</Link></li>
+                    </ul>
                 </div>
+
+                {/* Contact Us */}
+                <div>
+                    <h4 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '20px', color: 'var(--text-main)' }}>Contact Us</h4>
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <li style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', color: 'var(--text-muted)', fontSize: '0.95rem' }}>
+                            <Phone size={18} color="var(--primary)" style={{ marginTop: '2px' }} />
+                            +91 86392 75907
+                        </li>
+                        <li style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', color: 'var(--text-muted)', fontSize: '0.95rem' }}>
+                            <Mail size={18} color="var(--primary)" style={{ marginTop: '2px' }} />
+                            support@tastenova.in
+                        </li>
+                        <li style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', color: 'var(--text-muted)', fontSize: '0.95rem' }}>
+                            <MapPin size={18} color="var(--primary)" style={{ marginTop: '2px' }} />
+                            HQ: Siddiq Nagar, Gachibowli, Hyderabad, Telangana, India.
+                        </li>
+                    </ul>
+                </div>
+
             </div>
 
-            <div style={{ textAlign: 'center', padding: '30px', borderTop: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                &copy; {new Date().getFullYear()} TasteNova Inc. Designed with passion. All rights reserved.
+            <div className="container" style={{ borderTop: '1px solid var(--border-subtle)', marginTop: '40px', paddingTop: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px', paddingBottom: '0' }}>
+                <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>© 2026 TasteNova. All rights reserved.</p>
+                <div style={{ display: 'flex', gap: '20px' }}>
+                    <a href="#" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Privacy Policy</a>
+                    <a href="#" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Terms & Conditions</a>
+                </div>
             </div>
         </footer>
     );

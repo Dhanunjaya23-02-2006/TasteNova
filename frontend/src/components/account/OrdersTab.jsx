@@ -1,219 +1,156 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import { CartContext } from '../../context/CartContext';
 import { API_URL } from '../../config';
+import { Link } from 'react-router-dom';
+import { ArrowRight, Clock, MapPin, ChefHat, Package } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const OrdersTab = () => {
     const { user } = useContext(AuthContext);
-    const { replaceCart } = useContext(CartContext);
-    const navigate = useNavigate();
-
     const [orders, setOrders] = useState([]);
-    const [ratedItems, setRatedItems] = useState({});
-    const [showRateModal, setShowRateModal] = useState(false);
-    const [selectedChef, setSelectedChef] = useState(null);
-    const [rating, setRating] = useState(0);
-    const [comment, setComment] = useState('');
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        const fetchOrders = async () => {
+            try {
+                const res = await fetch(`${API_URL}/orders/myorders`, {
+                    headers: { Authorization: `Bearer ${user.token}` }
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    setOrders(data.data || []);
+                } else {
+                    toast.error(data.message || 'Failed to fetch orders');
+                }
+            } catch (error) {
+                toast.error('An error occurred while fetching orders');
+            } finally {
+                setLoading(false);
+            }
+        };
+
         if (user) {
             fetchOrders();
         }
     }, [user]);
 
-    const fetchOrders = async () => {
-        try {
-            const res = await fetch(`${API_URL}/orders/myorders`, {
-                headers: { Authorization: `Bearer ${user.token}` }
-            });
-            const data = await res.json();
-            if (res.ok) setOrders(data);
-        } catch (error) {
-            console.error('Failed to fetch orders', error);
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'Placed': return { bg: 'rgba(255, 165, 2, 0.1)', color: '#ffa502' };
+            case 'Accepted': return { bg: 'rgba(52, 152, 219, 0.1)', color: '#3498db' };
+            case 'Preparing': return { bg: 'rgba(155, 89, 182, 0.1)', color: '#9b59b6' };
+            case 'Out for Delivery': return { bg: 'rgba(230, 126, 34, 0.1)', color: '#e67e22' };
+            case 'Delivered': return { bg: 'rgba(46, 213, 115, 0.1)', color: '#2ed573' };
+            case 'Rejected':
+            case 'Cancelled': return { bg: 'rgba(255, 71, 87, 0.1)', color: '#ff4757' };
+            default: return { bg: 'rgba(149, 165, 166, 0.1)', color: '#95a5a6' };
         }
     };
 
-    const handleRateItem = async (menuItemId, star) => {
-        try {
-            const res = await fetch(`${API_URL}/menu/${menuItemId}/rate`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${user.token}`
-                },
-                body: JSON.stringify({ rating: star })
-            });
-            if (res.ok) {
-                toast.success('Thank you for rating this item!');
-                setRatedItems(prev => ({ ...prev, [menuItemId]: star }));
-            } else {
-                toast.error('Failed to submit rating.');
-            }
-        } catch (error) {
-            toast.error('Error submitting rating.');
-        }
+    const formatDate = (dateString) => {
+        const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+        return new Date(dateString).toLocaleDateString(undefined, options);
     };
 
-    const handleRateChef = async (e) => {
-        e.preventDefault();
-        if (rating === 0) {
-            toast.error('Please select a rating');
-            return;
-        }
-        try {
-            const res = await fetch(`${API_URL}/reviews`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${user.token}`
-                },
-                body: JSON.stringify({ chefId: selectedChef._id, rating, comment })
-            });
-            if (res.ok) {
-                toast.success('Review submitted successfully!');
-                setShowRateModal(false);
-                setRating(0);
-                setComment('');
-            } else {
-                const data = await res.json();
-                toast.error(data.message || 'Failed to submit review');
-            }
-        } catch (error) {
-            toast.error('Error submitting review');
-        }
-    };
+    if (loading) {
+        return <div className="animate-fade-up" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading orders...</div>;
+    }
 
-    const handleRepeatOrder = (order) => {
-        const repeatItems = order.orderItems.map(item => ({
-            _id: item.menuItem._id,
-            name: item.menuItem.name,
-            image: item.menuItem.image,
-            price: item.price,
-            ingredientCost: item.ingredientCost || 0,
-            qty: item.qty
-        }));
-        replaceCart(repeatItems);
-        toast.success('Order items added to cart!');
-        navigate('/checkout');
-    };
+    if (orders.length === 0) {
+        return (
+            <div className="animate-fade-up" style={{ background: 'var(--bg-surface)', padding: '60px 20px', borderRadius: '16px', boxShadow: 'var(--shadow-card)', textAlign: 'center' }}>
+                <Package size={64} style={{ color: 'var(--border)', margin: '0 auto 20px' }} />
+                <h3 style={{ fontSize: '1.5rem', color: 'var(--text-main)', marginBottom: '10px' }}>No orders yet</h3>
+                <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>Looks like you haven't placed any orders yet. Discover delicious home-cooked meals now!</p>
+                <Link to="/chefs" className="btn btn-primary" style={{ padding: '12px 24px', borderRadius: '8px' }}>Explore Chefs</Link>
+            </div>
+        );
+    }
 
     return (
-        <div className="glass-panel" style={{ maxWidth: '800px', margin: '0 auto', padding: '32px', boxShadow: 'var(--shadow-floating)', animation: 'fadeInUp 0.4s ease' }}>
-            <h3 className="mb-4" style={{ fontSize: '1.6rem' }}>My Past & Current Orders</h3>
-            {orders.length === 0 ? (
-                <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem', textAlign: 'center', padding: '20px' }}>You have no recorded orders to track.</p>
-            ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    {orders.slice().reverse().map((order, index) => (
-                        <div key={order._id} className="glass-panel" style={{ background: 'rgba(255,255,255,0.03)', padding: '24px', animation: `fadeInUp 0.5s ease ${index * 0.1}s both`, border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-floating)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '15px' }}>
-                                <div style={{ flex: '1 1 300px' }}>
-                                    <h4 style={{ margin: '0 0 8px 0', fontSize: '1.3rem' }}>Order #{order._id.substring(order._id.length - 8)}</h4>
-                                    <p style={{ margin: '0 0 10px 0', fontSize: '1.1rem', color: 'var(--text-dark)', fontWeight: 'bold' }}>
-                                        Total: ₹{order.totalPrice}
-                                    </p>
-                                    <div style={{ display: 'flex', gap: '15px', marginTop: '15px', flexWrap: 'wrap' }}>
-                                        <span style={{ fontSize: '0.9rem', padding: '6px 14px', borderRadius: '20px', background: 'rgba(255,255,255,0.1)', fontWeight: 'bold' }}>Status: {order.status}</span>
-                                        <span style={{ fontSize: '0.9rem', padding: '6px 14px', borderRadius: '20px', background: 'rgba(252, 160, 72, 0.15)', color: 'var(--secondary-color)', fontWeight: 'bold' }}>Logistics: {order.deliveryStatus}</span>
+        <div className="animate-fade-up" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <h2 style={{ fontSize: '1.5rem', color: 'var(--text-main)', fontWeight: 800, marginBottom: '4px' }}>Order History</h2>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '8px' }}>Track your current orders and view past purchases.</p>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {orders.map((order) => {
+                    const statusStyle = getStatusColor(order.status);
+                    
+                    return (
+                        <div key={order._id} style={{ background: 'var(--bg-surface)', borderRadius: '16px', border: '1px solid var(--border-subtle)', overflow: 'hidden', boxShadow: 'var(--shadow-card)' }}>
+                            {/* Order Header */}
+                            <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                                <div>
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Order ID:</span>
+                                    <span style={{ fontSize: '0.9rem', color: 'var(--text-main)', fontWeight: 600, marginLeft: '8px', letterSpacing: '1px' }}>#{order._id.substring(order._id.length - 8).toUpperCase()}</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                    <Clock size={14} /> {formatDate(order.createdAt)}
+                                </div>
+                            </div>
+                            
+                            {/* Order Body */}
+                            <div style={{ padding: '24px', display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                <div style={{ flex: 1, minWidth: '250px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                                        <ChefHat size={18} style={{ color: 'var(--primary)' }} />
+                                        <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: 700 }}>
+                                            {order.chef?.businessName || order.chef?.name || 'TasteNova Kitchen'}
+                                        </h3>
                                     </div>
-
-                                    {/* Order Items UI for rating */}
-                                    <div style={{ marginTop: '20px', borderTop: '1px solid var(--border)', paddingTop: '15px' }}>
-                                        <h5 style={{ fontSize: '1rem', marginBottom: '10px' }}>Items ordered:</h5>
-                                        {order.orderItems && order.orderItems.map((item, idx) => (
-                                            <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-body)', padding: '10px', borderRadius: '8px', marginBottom: '8px' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                    {item.menuItem?.image && <img loading="lazy" src={item.menuItem.image} alt="food" style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} />}
-                                                    <span>{item.menuItem?.name || 'Unknown Item'} x{item.qty}</span>
-                                                </div>
-                                                <div style={{ display: 'flex', gap: '5px' }}>
-                                                    {[1, 2, 3, 4, 5].map(star => {
-                                                        const currentRating = ratedItems[item.menuItem?._id] || 0;
-                                                        return (
-                                                            <button
-                                                                key={star}
-                                                                onClick={() => {
-                                                                    if(item.menuItem?._id) handleRateItem(item.menuItem._id, star);
-                                                                }}
-                                                                style={{ background: 'none', border: 'none', color: '#ffd700', fontSize: '1.4rem', cursor: 'pointer', padding: 0 }}
-                                                                title={`Rate ${star} stars`}
-                                                            >
-                                                                {star <= currentRating ? '★' : '☆'}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
+                                    
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                                        {order.orderItems.map((item, idx) => (
+                                            <div key={idx} style={{ display: 'flex', gap: '8px', fontSize: '0.95rem' }}>
+                                                <span style={{ fontWeight: 600, color: 'var(--text-main)', minWidth: '30px' }}>{item.qty}x</span>
+                                                <span style={{ color: 'var(--text-muted)' }}>{item.menuItem?.name || 'Item Unavailable'}</span>
                                             </div>
                                         ))}
                                     </div>
+                                    
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                        <MapPin size={14} /> Deliver to: {order.shippingAddress?.address.substring(0, 30)}...
+                                    </div>
                                 </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: '1 1 200px' }}>
-                                    <button className="btn btn-primary" style={{ padding: '12px 25px', width: '100%' }} onClick={() => navigate(`/track/${order._id}`)}>Track Live on Map ⌖</button>
-                                    <button 
-                                        className="btn btn-secondary" 
-                                        style={{ padding: '12px 25px', background: 'var(--secondary-color)', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold', width: '100%' }} 
-                                        onClick={() => handleRepeatOrder(order)}
-                                    >
-                                        Repeat Order ↻
+                                
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '16px', minWidth: '150px' }}>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Total Amount</div>
+                                        <div style={{ fontSize: '1.4rem', color: 'var(--text-main)', fontWeight: 800 }}>₹{order.totalPrice.toFixed(2)}</div>
+                                    </div>
+                                    
+                                    <span style={{ 
+                                        padding: '6px 16px', 
+                                        borderRadius: '20px', 
+                                        fontSize: '0.85rem', 
+                                        fontWeight: 600, 
+                                        background: statusStyle.bg, 
+                                        color: statusStyle.color,
+                                        display: 'inline-block'
+                                    }}>
+                                        {order.status}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            {/* Order Footer Actions */}
+                            <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                                {order.status !== 'Delivered' && order.status !== 'Cancelled' && order.status !== 'Rejected' && (
+                                    <Link to={`/track/${order._id}`} className="btn btn-primary" style={{ padding: '8px 20px', borderRadius: '8px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        Track Order <ArrowRight size={16} />
+                                    </Link>
+                                )}
+                                {(order.status === 'Delivered' || order.status === 'Cancelled' || order.status === 'Rejected') && (
+                                    <button className="btn btn-outline" style={{ padding: '8px 20px', borderRadius: '8px', fontSize: '0.9rem' }}>
+                                        Reorder
                                     </button>
-                                    {order.status === 'Completed' && order.chef && (
-                                        <button 
-                                            className="btn btn-outline" 
-                                            style={{ padding: '10px 20px', fontSize: '0.9rem', color: 'var(--primary-color)', borderColor: 'var(--primary-color)' }}
-                                            onClick={() => {
-                                                setSelectedChef(order.chef);
-                                                setShowRateModal(true);
-                                            }}
-                                        >
-                                            Rate Chef {order.chef.businessName || order.chef.name} ★
-                                        </button>
-                                    )}
-                                </div>
+                                )}
                             </div>
                         </div>
-                    ))}
-                </div>
-            )}
-
-            {/* Chef Rating Modal */}
-            {showRateModal && selectedChef && (
-                <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
-                    <div className="glass-panel" style={{ width: '100%', maxWidth: '500px', padding: '30px', animation: 'scaleIn 0.3s ease', position: 'relative' }}>
-                        <button 
-                            onClick={() => setShowRateModal(false)}
-                            style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.5rem', cursor: 'pointer' }}
-                        >✕</button>
-                        <h3 className="mb-4 text-center">Rate {selectedChef.businessName || selectedChef.name}</h3>
-                        <form onSubmit={handleRateChef}>
-                            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '20px' }}>
-                                {[1,2,3,4,5].map(star => (
-                                    <button
-                                        key={star}
-                                        type="button"
-                                        onClick={() => setRating(star)}
-                                        style={{ background: 'none', border: 'none', fontSize: '2.5rem', cursor: 'pointer', color: star <= rating ? '#ffd700' : 'var(--border)' }}
-                                    >
-                                        {star <= rating ? '★' : '☆'}
-                                    </button>
-                                ))}
-                            </div>
-                            <div style={{ marginBottom: '20px' }}>
-                                <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-muted)' }}>Leave a comment (optional)</label>
-                                <textarea
-                                    className="form-control"
-                                    rows="3"
-                                    value={comment}
-                                    onChange={(e) => setComment(e.target.value)}
-                                    placeholder="How was the food and packaging?"
-                                ></textarea>
-                            </div>
-                            <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '12px' }}>Submit Review</button>
-                        </form>
-                    </div>
-                </div>
-            )}
+                    );
+                })}
+            </div>
         </div>
     );
 };
