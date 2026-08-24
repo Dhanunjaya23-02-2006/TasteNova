@@ -160,7 +160,15 @@ const updateSubAdmin = async (req, res) => {
         const subAdmin = await User.findById(req.params.id);
         if (!subAdmin) return res.status(404).json({ message: 'Subadmin not found' });
         
-        if (assignedCities !== undefined) subAdmin.assignedCities = assignedCities;
+        if (assignedCities !== undefined) {
+            subAdmin.assignedCities = assignedCities;
+            // Unset from previous cities
+            await City.updateMany({ subAdminId: subAdmin._id }, { $unset: { subAdminId: "" } });
+            // Set on new cities
+            if (assignedCities.length > 0) {
+                await City.updateMany({ _id: { $in: assignedCities } }, { subAdminId: subAdmin._id });
+            }
+        }
         if (status !== undefined) subAdmin.status = status;
         if (role !== undefined) subAdmin.role = role;
         
@@ -195,6 +203,10 @@ const createSubAdmin = async (req, res) => {
         });
         
         await newAdmin.save();
+        
+        if (assignedCities && assignedCities.length > 0) {
+            await City.updateMany({ _id: { $in: assignedCities } }, { subAdminId: newAdmin._id });
+        }
         
         if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.status(201).json(newAdmin);
