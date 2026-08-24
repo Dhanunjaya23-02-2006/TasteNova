@@ -7,6 +7,7 @@ import {
     Home as HomeIcon, MoreHorizontal, Star, FileText, Gift, Box
 } from 'lucide-react';
 import { API_URL } from '../config';
+import api from '../api';
 
 const sidebarGroups = [
     {
@@ -59,6 +60,26 @@ const DeliveryLayout = () => {
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
     }, []);
+
+    // Heartbeat for online hours tracking
+    useEffect(() => {
+        if (!isOnline) return;
+        
+        const pingHeartbeat = async () => {
+            try {
+                const res = await api.post('/delivery/heartbeat');
+                // The backend updates the user's online hours
+            } catch (error) {
+                console.error('Heartbeat failed:', error);
+            }
+        };
+
+        // Ping immediately, then every 60 seconds
+        pingHeartbeat();
+        const intervalId = setInterval(pingHeartbeat, 60000);
+
+        return () => clearInterval(intervalId);
+    }, [isOnline]);
 
     const handleLogout = () => {
         logout();
@@ -115,7 +136,7 @@ const DeliveryLayout = () => {
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                     
-                    <button style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', cursor: 'pointer' }}>
+                    <button onClick={() => navigate('/delivery/support')} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', cursor: 'pointer' }}>
                         <HelpCircle size={18} />
                         <span style={{ display: window.innerWidth > 600 ? 'block' : 'none' }}>Help & Support</span>
                     </button>

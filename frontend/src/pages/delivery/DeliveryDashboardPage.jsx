@@ -8,6 +8,9 @@ import {
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api';
+import io from 'socket.io-client';
+import { API_URL } from '../../config';
+import toast from 'react-hot-toast';
 
 const DeliveryDashboardPage = () => {
     const { user } = useContext(AuthContext);
@@ -33,6 +36,32 @@ const DeliveryDashboardPage = () => {
         }
     };
 
+    useEffect(() => {
+        if (!user || !user.token) return;
+        const socket = io(API_URL.replace('/api', ''), {
+            auth: { token: user.token }
+        });
+
+        socket.on('connect', () => {
+            socket.emit('join_delivery');
+        });
+
+        socket.on('new_delivery_request', (order) => {
+            toast.success('New delivery request available!');
+            fetchDashboard();
+        });
+
+        socket.on('delivery_status_update', (order) => {
+            fetchDashboard();
+        });
+
+        socket.on('order_status_update', (order) => {
+            fetchDashboard();
+        });
+
+        return () => socket.disconnect();
+    }, [user]);
+
     const toggleStatus = async () => {
         try {
             const res = await api.post('/delivery/toggle-status');
@@ -42,24 +71,16 @@ const DeliveryDashboardPage = () => {
         }
     };
 
-    // Fallback Data for the UI
+    // Actual Data from Backend
     const stats = dashboardData?.stats || {
-        earnings: { value: 780, trend: '+12.4%', label: 'vs yesterday' },
-        deliveries: { value: 8, trend: '+1', label: 'vs yesterday' },
-        distance: { value: '42.6 km', trend: '+5.2 km', label: 'vs yesterday' },
-        rating: { value: 4.8, sub: 'Based on 128 ratings' },
-        acceptance: { value: '92%', trend: '+3%', label: 'vs last 7 days' }
+        earnings: { value: 0, trend: '', label: '' },
+        deliveries: { value: 0, trend: '', label: '' },
+        distance: { value: '0 km', trend: '', label: '' },
+        rating: { value: user?.rating || 0, sub: `Based on ${user?.numReviews || 0} ratings` },
+        acceptance: { value: '100%', trend: '', label: '' }
     };
 
-    const activeDelivery = dashboardData?.activeDelivery || {
-        id: '#AE10294',
-        status: 'Picked Up',
-        pickup: { name: 'Chef Lakshmi', location: 'Kukatpally' },
-        drop: { name: 'Dhanunjaya', location: 'KPHB Colony' },
-        time: '18 mins',
-        distance: '2.4 km',
-        earnings: 68
-    };
+    const activeDelivery = dashboardData?.activeDelivery || null;
 
     const newRequests = dashboardData?.stats?.newRequests || [];
 
@@ -236,16 +257,15 @@ const DeliveryDashboardPage = () => {
                         </select>
                     </div>
                     <div>
-                        <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)' }}>₹5,420</div>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Total Earnings</div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--success)', marginTop: '4px' }}>↑ 18.6% vs last week</div>
+                        <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)' }}>₹{stats.earnings.value || 0}</div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Total Earnings (Today)</div>
                     </div>
                     
                     {/* Placeholder Chart */}
                     <div style={{ height: '160px', marginTop: '20px', display: 'flex', alignItems: 'flex-end', gap: '12px', paddingBottom: '20px', borderBottom: '1px solid var(--border-subtle)' }}>
                         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (
                             <div key={day} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ width: '100%', background: i === 4 ? 'var(--primary)' : 'var(--primary-light)', height: `${Math.max(20, Math.random() * 100)}%`, borderRadius: '4px' }}></div>
+                                <div style={{ width: '100%', background: i === 4 ? 'var(--primary)' : 'var(--primary-light)', height: `${stats.earnings.value > 0 ? Math.max(10, Math.random() * 100) : 5}%`, borderRadius: '4px' }}></div>
                                 <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{day}</span>
                             </div>
                         ))}
@@ -254,15 +274,15 @@ const DeliveryDashboardPage = () => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
                          <div>
                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Delivery Earnings</div>
-                             <div style={{ fontWeight: 700, color: 'var(--primary)' }}>₹4,120</div>
+                             <div style={{ fontWeight: 700, color: 'var(--primary)' }}>₹{stats.earnings.value || 0}</div>
                          </div>
                          <div>
                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Incentives</div>
-                             <div style={{ fontWeight: 700, color: '#8e44ad' }}>₹820</div>
+                             <div style={{ fontWeight: 700, color: '#8e44ad' }}>₹{stats.earnings.incentives || 0}</div>
                          </div>
                          <div>
                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Tips</div>
-                             <div style={{ fontWeight: 700, color: '#e67e22' }}>₹480</div>
+                             <div style={{ fontWeight: 700, color: '#e67e22' }}>₹{stats.earnings.tips || 0}</div>
                          </div>
                     </div>
                 </div>

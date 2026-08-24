@@ -110,15 +110,15 @@ const SuperadminSettings = () => {
                     {loading ? <div className="sa-empty">Loading Settings...</div> : activeTab === 'General' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-main)' }}>Platform Name</label>
+                                <label className="sa-form-label">Platform Name</label>
                                 <input type="text" className="sa-search" value={settings.platformName} onChange={(e) => setSettings({...settings, platformName: e.target.value})} style={{ width: '100%', maxWidth: '400px', padding: '10px 16px', borderRadius: '8px' }} />
                             </div>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-main)' }}>Support Email Address</label>
+                                <label className="sa-form-label">Support Email Address</label>
                                 <input type="email" className="sa-search" value={settings.supportEmail} onChange={(e) => setSettings({...settings, supportEmail: e.target.value})} style={{ width: '100%', maxWidth: '400px', padding: '10px 16px', borderRadius: '8px' }} />
                             </div>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-main)' }}>Base Delivery Fee (₹)</label>
+                                <label className="sa-form-label">Base Delivery Fee (₹)</label>
                                 <input type="number" className="sa-search" value={settings.baseDeliveryFee} onChange={(e) => setSettings({...settings, baseDeliveryFee: Number(e.target.value)})} style={{ width: '100%', maxWidth: '200px', padding: '10px 16px', borderRadius: '8px' }} />
                                 <p style={{ margin: '8px 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Default delivery fee applied if no city-specific rules match.</p>
                             </div>

@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { API_URL } from '../../config';
 import { AuthContext } from '../../context/AuthContext';
+import { SuperadminSocketContext } from '../../context/SuperadminSocketContext';
 import toast from 'react-hot-toast';
 import { Save, Loader } from 'lucide-react';
 
 const ContentManagement = () => {
     const { user } = useContext(AuthContext);
+    const { lastUpdated } = useContext(SuperadminSocketContext);
     const [selectedPage, setSelectedPage] = useState('about-us');
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
@@ -20,7 +22,7 @@ const ContentManagement = () => {
 
     useEffect(() => {
         fetchContent(selectedPage);
-    }, [selectedPage]);
+    }, [selectedPage, lastUpdated]);
 
     const fetchContent = async (slug) => {
         setLoading(true);
@@ -92,7 +94,7 @@ const ContentManagement = () => {
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>Page Title</label>
+                            <label className="sa-form-label">Page Title</label>
                             <input 
                                 type="text" 
                                 className="form-control" 
@@ -102,7 +104,7 @@ const ContentManagement = () => {
                             />
                         </div>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>HTML Content</label>
+                            <label className="sa-form-label">HTML Content</label>
                             <textarea 
                                 className="form-control" 
                                 rows={15} 

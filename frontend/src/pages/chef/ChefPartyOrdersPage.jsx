@@ -2,12 +2,29 @@ import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { API_URL } from '../../config';
 import BookingsTab from '../../components/chef/BookingsTab';
+import io from 'socket.io-client';
+import toast from 'react-hot-toast';
 
 const ChefPartyOrdersPage = () => {
     const { user } = useContext(AuthContext);
     const [bookings, setBookings] = useState([]);
 
-    useEffect(() => { fetchBookings(); }, []);
+    useEffect(() => { 
+        fetchBookings(); 
+        
+        if (user) {
+            const socket = io(API_URL.replace('/api', ''));
+            socket.emit('join_chef', user._id);
+            socket.on('new_booking', () => {
+                toast.success('NEW PARTY BOOKING REQUEST!', { icon: '📅' });
+                fetchBookings();
+            });
+            socket.on('booking_update', () => {
+                fetchBookings();
+            });
+            return () => socket.disconnect();
+        }
+    }, [user]);
 
     const fetchBookings = async () => {
         try {

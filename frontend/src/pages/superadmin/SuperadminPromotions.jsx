@@ -154,7 +154,7 @@ const SuperadminPromotions = () => {
             {/* Table */}
             <div className="sa-card" style={{ padding: '24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-main)' }}>All Promotions</h3>
+                    <h3 className="sa-modal-title">All Promotions</h3>
                     <div style={{ position: 'relative' }}>
                         <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                         <input className="sa-search" style={{ paddingLeft: '32px', width: '250px' }} placeholder="Search promotions..." value={search} onChange={e => setSearch(e.target.value)} />
@@ -219,26 +219,26 @@ const SuperadminPromotions = () => {
             {/* Create/Edit Modal */}
             {isModalOpen && (
                 <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
-                    <div className="sa-card" style={{ width: '100%', maxWidth: '520px', padding: '28px', position: 'relative', margin: 'auto', maxHeight: 'none', overflowY: 'visible' }}>
-                        <X size={20} style={{ position: 'absolute', top: '16px', right: '16px', cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => setIsModalOpen(false)} />
-                        <h3 style={{ margin: '0 0 24px 0', fontFamily: "'DM Serif Display', serif" }}>{editingId ? 'Edit Promotion' : 'Create Promotion'}</h3>
+                    <div className="sa-modal-card">
+                        <X size={20} className="sa-modal-close" onClick={() => setIsModalOpen(false)} />
+                        <h3 className="sa-modal-title">{editingId ? 'Edit Promotion' : 'Create Promotion'}</h3>
                         
                         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Promotion Title</label>
+                                <label className="sa-form-label">Promotion Title</label>
                                 <input type="text" className="form-control" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required />
                             </div>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Promo Code (Identifier)</label>
+                                <label className="sa-form-label">Promo Code (Identifier)</label>
                                 <input type="text" className="form-control" value={formData.code} onChange={e => setFormData({...formData, code: e.target.value.toUpperCase()})} required />
                             </div>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Description</label>
+                                <label className="sa-form-label">Description</label>
                                 <input type="text" className="form-control" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} required />
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Discount Type</label>
+                                    <label className="sa-form-label">Discount Type</label>
                                     <select className="form-control" value={formData.discountType} onChange={e => setFormData({...formData, discountType: e.target.value})}>
                                         <option value="percentage">Percentage</option>
                                         <option value="flat">Flat Amount</option>
@@ -246,36 +246,36 @@ const SuperadminPromotions = () => {
                                 </div>
                                 {formData.discountType === 'percentage' ? (
                                     <div>
-                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Percentage (%)</label>
+                                        <label className="sa-form-label">Percentage (%)</label>
                                         <input type="number" className="form-control" value={formData.discountPercentage} onChange={e => setFormData({...formData, discountPercentage: Number(e.target.value)})} />
                                     </div>
                                 ) : (
                                     <div>
-                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Flat Amount (₹)</label>
+                                        <label className="sa-form-label">Flat Amount (₹)</label>
                                         <input type="number" className="form-control" value={formData.discountFlat} onChange={e => setFormData({...formData, discountFlat: Number(e.target.value)})} />
                                     </div>
                                 )}
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Max Discount (₹)</label>
+                                    <label className="sa-form-label">Max Discount (₹)</label>
                                     <input type="number" className="form-control" value={formData.maxDiscountAmount} onChange={e => setFormData({...formData, maxDiscountAmount: Number(e.target.value)})} required />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Min Order Value (₹)</label>
+                                    <label className="sa-form-label">Min Order Value (₹)</label>
                                     <input type="number" className="form-control" value={formData.minOrderValue} onChange={e => setFormData({...formData, minOrderValue: Number(e.target.value)})} />
                                 </div>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Scope</label>
+                                    <label className="sa-form-label">Scope</label>
                                     <select className="form-control" value={formData.scope} onChange={e => setFormData({...formData, scope: e.target.value})}>
                                         <option value="Global">Global</option>
                                         <option value="City">City-specific</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Valid Until</label>
+                                    <label className="sa-form-label">Valid Until</label>
                                     <input type="date" className="form-control" value={formData.validUntil} onChange={e => setFormData({...formData, validUntil: e.target.value})} required />
                                 </div>
                             </div>
@@ -291,12 +291,12 @@ const SuperadminPromotions = () => {
             {/* Delete Confirmation Modal */}
             {isDeleteModalOpen && (
                 <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsDeleteModalOpen(false); }}>
-                    <div className="sa-card" style={{ width: '100%', maxWidth: '380px', padding: '28px', position: 'relative', textAlign: 'center', margin: 'auto' }}>
-                        <X size={20} style={{ position: 'absolute', top: '16px', right: '16px', cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => setIsDeleteModalOpen(false)} />
+                    <div className="sa-modal-card">
+                        <X size={20} className="sa-modal-close" onClick={() => setIsDeleteModalOpen(false)} />
                         <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#F8D7DA', color: 'var(--error)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
                             <Trash2 size={22} />
                         </div>
-                        <h3 style={{ margin: '0 0 8px 0', color: 'var(--error)' }}>Delete Promotion</h3>
+                        <h3 className="sa-modal-title">Delete Promotion</h3>
                         <p style={{ margin: '0 0 24px 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Are you sure you want to delete this promotion? This action cannot be undone.</p>
                         
                         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>

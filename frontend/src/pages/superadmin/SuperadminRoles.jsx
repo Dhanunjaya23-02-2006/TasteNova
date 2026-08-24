@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Lock, Plus, Edit2, Trash2, X, CheckSquare, Square } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthContext } from '../../context/AuthContext';
+import { SuperadminSocketContext } from '../../context/SuperadminSocketContext';
 import { API_URL } from '../../config';
 
 const AVAILABLE_PERMISSIONS = [
@@ -18,6 +19,7 @@ const AVAILABLE_PERMISSIONS = [
 
 const SuperadminRoles = () => {
     const { user } = useContext(AuthContext);
+    const { lastUpdated } = useContext(SuperadminSocketContext);
     const [roles, setRoles] = useState([]);
     
     // Modal State
@@ -39,7 +41,7 @@ const SuperadminRoles = () => {
         } catch(e) { console.error(e); }
     };
 
-    useEffect(() => { if(user) fetchRoles(); }, [user]);
+    useEffect(() => { if(user) fetchRoles(); }, [user, lastUpdated]);
 
     const openModal = (role = null) => {
         if(role) {
@@ -181,14 +183,14 @@ const SuperadminRoles = () => {
 
             {/* Create/Edit Modal */}
             {isModalOpen && (
-                <div className="modal-overlay">
-                    <div className="sa-card" style={{ width: '100%', maxWidth: '600px', padding: '24px', position: 'relative' }}>
-                        <X size={20} style={{ position: 'absolute', top: '16px', right: '16px', cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => setIsModalOpen(false)} />
-                        <h3 style={{ margin: '0 0 20px 0' }}>{editingRole ? 'Edit Role' : 'Create Role'}</h3>
+                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
+                    <div className="sa-modal-card">
+                        <X size={20} className="sa-modal-close" onClick={() => setIsModalOpen(false)} />
+                        <h3 className="sa-modal-title">{editingRole ? 'Edit Role' : 'Create Role'}</h3>
                         
                         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>Role Name</label>
+                                <label className="sa-form-label">Role Name</label>
                                 <input 
                                     type="text" 
                                     className="form-control" 
@@ -199,7 +201,7 @@ const SuperadminRoles = () => {
                                 />
                             </div>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>Description</label>
+                                <label className="sa-form-label">Description</label>
                                 <input 
                                     type="text" 
                                     className="form-control" 
@@ -210,7 +212,7 @@ const SuperadminRoles = () => {
                             </div>
                             
                             <div>
-                                <label style={{ display: 'block', marginBottom: '12px', fontWeight: 600, fontSize: '0.9rem' }}>Permissions</label>
+                                <label className="sa-form-label">Permissions</label>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px', background: '#f8f9fa', padding: '16px', borderRadius: '8px' }}>
                                     {AVAILABLE_PERMISSIONS.map(perm => (
                                         <div 
@@ -240,10 +242,10 @@ const SuperadminRoles = () => {
 
             {/* Delete Modal */}
             {isDeleteModalOpen && (
-                <div className="modal-overlay">
-                    <div className="sa-card" style={{ width: '100%', maxWidth: '350px', padding: '24px', position: 'relative', textAlign: 'center' }}>
-                        <X size={20} style={{ position: 'absolute', top: '16px', right: '16px', cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => setIsDeleteModalOpen(false)} />
-                        <h3 style={{ margin: '0 0 12px 0', color: 'var(--error)' }}>Delete Role</h3>
+                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsDeleteModalOpen(false); }}>
+                    <div className="sa-modal-card">
+                        <X size={20} className="sa-modal-close" onClick={() => setIsDeleteModalOpen(false)} />
+                        <h3 className="sa-modal-title">Delete Role</h3>
                         <p style={{ margin: '0 0 24px 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Are you sure you want to delete this custom role?</p>
                         
                         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>

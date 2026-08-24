@@ -100,7 +100,7 @@ const SuperadminCityAnalytics = () => {
             {/* Deep Dive Charts */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                 <div className="sa-card" style={{ padding: '24px' }}>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '0 0 16px 0', color: 'var(--text-main)' }}>Market Share by GMV</h3>
+                    <h3 className="sa-modal-title">Market Share by GMV</h3>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 0' }}>
                         <div style={{ position: 'relative', width: '200px', height: '200px', borderRadius: '50%', background: `conic-gradient(${gradientStops})` }}>
                             <div style={{ position: 'absolute', top: '25%', left: '25%', right: '25%', bottom: '25%', background: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
@@ -111,7 +111,7 @@ const SuperadminCityAnalytics = () => {
                     </div>
                 </div>
                 <div className="sa-card" style={{ padding: '24px' }}>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '0 0 16px 0', color: 'var(--text-main)' }}>Average Delivery Time</h3>
+                    <h3 className="sa-modal-title">Average Delivery Time</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '24px' }}>
                         {citiesData.length === 0 && <div className="sa-empty">No data available</div>}
                         {citiesData.map((city, i) => {

@@ -2,10 +2,12 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Search, Edit3, Settings, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthContext } from '../../context/AuthContext';
+import { SuperadminSocketContext } from '../../context/SuperadminSocketContext';
 import { API_URL } from '../../config';
 
 const SuperadminCommissions = () => {
     const { user } = useContext(AuthContext);
+    const { lastUpdated } = useContext(SuperadminSocketContext);
     const [search, setSearch] = useState('');
     const [chefs, setChefs] = useState([]);
     const [defaultRate, setDefaultRate] = useState(20);
@@ -26,7 +28,7 @@ const SuperadminCommissions = () => {
 
     useEffect(() => {
         if(user) fetchData();
-    }, [user]);
+    }, [user, lastUpdated]);
 
     return (
         <div className="animate-fade-up">

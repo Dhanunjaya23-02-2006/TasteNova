@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
+import { SuperadminSocketContext } from '../../context/SuperadminSocketContext';
 import { ShieldAlert, User as UserIcon, Calendar } from 'lucide-react';
 import { API_URL } from '../../config';
 
 const SuperadminAuditLogs = () => {
     const { user } = useContext(AuthContext);
+    const { lastUpdated } = useContext(SuperadminSocketContext);
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -17,7 +19,7 @@ const SuperadminAuditLogs = () => {
             finally { setLoading(false); }
         };
         fetchLogs();
-    }, [user]);
+    }, [user, lastUpdated]);
 
     return (
         <div>

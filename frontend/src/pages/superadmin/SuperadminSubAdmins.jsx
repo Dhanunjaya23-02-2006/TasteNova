@@ -154,32 +154,32 @@ const SuperadminSubAdmins = () => {
 
             {/* Create Modal */}
             {isModalOpen && (
-                <div className="modal-overlay">
-                    <div className="sa-card" style={{ width: '100%', maxWidth: '500px', padding: '24px', position: 'relative' }}>
-                        <X size={20} style={{ position: 'absolute', top: '16px', right: '16px', cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => setIsModalOpen(false)} />
-                        <h3 style={{ margin: '0 0 20px 0' }}>Create Sub-Admin</h3>
+                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
+                    <div className="sa-modal-card">
+                        <X size={20} className="sa-modal-close" onClick={() => setIsModalOpen(false)} />
+                        <h3 className="sa-modal-title">Create Sub-Admin</h3>
                         
                         <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>Full Name</label>
+                                <label className="sa-form-label">Full Name</label>
                                 <input type="text" className="form-control" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>Email</label>
+                                    <label className="sa-form-label">Email</label>
                                     <input type="email" className="form-control" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} required />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>Phone</label>
+                                    <label className="sa-form-label">Phone</label>
                                     <input type="text" className="form-control" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} required />
                                 </div>
                             </div>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>Temporary Password</label>
+                                <label className="sa-form-label">Temporary Password</label>
                                 <input type="text" className="form-control" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} required />
                             </div>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>Role</label>
+                                    <label className="sa-form-label">Role</label>
                                     <select className="form-control" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}>
                                         <option value="subadmin">Sub-Admin (Zonal)</option>
                                         <option value="admin">Admin (Regional)</option>

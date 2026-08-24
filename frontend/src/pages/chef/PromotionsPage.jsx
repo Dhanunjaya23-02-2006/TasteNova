@@ -42,7 +42,7 @@ const PromotionsPage = () => {
 
     const fetchMenuItems = async () => {
         try {
-            const res = await fetch(`${API_URL}/menu/chef/${user._id}`);
+            const res = await fetch(`${API_URL}/menu?chef=${user._id}`);
             if (res.ok) setMenuItems(await res.json());
         } catch (error) {
             console.error(error);

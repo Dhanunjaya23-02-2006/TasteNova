@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
+import { SuperadminSocketContext } from '../../context/SuperadminSocketContext';
 import toast from 'react-hot-toast';
 import { API_URL } from '../../config';
 
 const SuperadminVerification = () => {
     const { user } = useContext(AuthContext);
+    const { lastUpdated } = useContext(SuperadminSocketContext);
     const [chefs, setChefs] = useState([]);
     const [delivery, setDelivery] = useState([]);
     const [loading, setLoading] = useState(true);

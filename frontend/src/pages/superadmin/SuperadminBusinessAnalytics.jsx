@@ -2,10 +2,12 @@ import React, { useState, useEffect, useContext } from 'react';
 import { BarChart3, TrendingUp, Users, ShoppingBag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { AuthContext } from '../../context/AuthContext';
+import { SuperadminSocketContext } from '../../context/SuperadminSocketContext';
 import { API_URL } from '../../config';
 
 const SuperadminBusinessAnalytics = () => {
     const { user } = useContext(AuthContext);
+    const { lastUpdated } = useContext(SuperadminSocketContext);
     const [period, setPeriod] = useState('Last 7 Days');
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);

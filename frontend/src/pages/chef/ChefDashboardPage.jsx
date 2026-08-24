@@ -48,6 +48,21 @@ const ChefDashboardPage = () => {
                 fetchOrders();
                 fetchStats();
             });
+            socket.on('order_status_update', () => {
+                fetchOrders();
+                fetchStats();
+            });
+            socket.on('new_review', () => {
+                toast.success('New review received!', { icon: '⭐' });
+                fetchStats();
+            });
+            socket.on('new_booking', () => {
+                toast.success('New party booking request!', { icon: '📅' });
+                fetchStats();
+            });
+            socket.on('booking_update', () => {
+                fetchStats();
+            });
             return () => socket.disconnect();
         }
     }, [user]);
@@ -340,9 +355,9 @@ const ChefDashboardPage = () => {
             </div>
 
             {/* ─── MIDDLE SECTION (Orders & Overview) ─── */}
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth < 1000 ? '1fr' : '2fr 1fr', gap: '24px' }}>
                 {/* Recent Orders */}
-                <div style={{ ...cardBase, gridColumn: window.innerWidth < 1000 ? 'span 2' : 'span 1' }}>
+                <div style={{ ...cardBase, gridColumn: 'span 1' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                         <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#0F3F26' }}>Recent Orders</h3>
                         <Link to="/chef/orders" style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -396,7 +411,7 @@ const ChefDashboardPage = () => {
                 </div>
 
                 {/* Today's Overview */}
-                <div style={{ ...cardBase, gridColumn: window.innerWidth < 1000 ? 'span 2' : 'span 1' }}>
+                <div style={{ ...cardBase, gridColumn: 'span 1' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                         <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#0F3F26' }}>Today's Overview</h3>
                         <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{dateToday}</span>
@@ -447,7 +462,7 @@ const ChefDashboardPage = () => {
                         <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '20px 0' }}>No upcoming bookings</p>
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            {(stats.upcomingBookingsList || [{ partyType: 'Birthday Party', date: new Date(), guestCount: 10, status: 'Confirmed' }, { partyType: 'Kitty Party', date: new Date(), guestCount: 8, status: 'Pending' }]).map((booking, i) => (
+                            {(stats.upcomingBookingsList || []).map((booking, i) => (
                                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '16px', borderBottom: '1px solid var(--border-subtle)' }}>
                                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                                         <div style={{ padding: '10px', background: 'rgba(155, 89, 182, 0.1)', borderRadius: '10px', color: '#9b59b6' }}>
@@ -498,7 +513,7 @@ const ChefDashboardPage = () => {
                             </div>
                             <div>
                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Average Rating</div>
-                                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F3F26' }}>{stats.rating || '4.8'}</div>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0F3F26' }}>{stats.rating || user.rating || 0}</div>
                                 <div style={{ fontSize: '0.7rem', color: '#27ae60' }}>↑ 0.3 vs last week</div>
                             </div>
                         </div>
@@ -540,10 +555,7 @@ const ChefDashboardPage = () => {
                         <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '20px 0' }}>No reviews yet</p>
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                            {(stats.recentReviews || [
-                                { user: { name: 'Neha Reddy' }, rating: 5, comment: 'Delicious food, homely taste! Biryani was outstanding.', dish: 'Chicken Biryani', createdAt: new Date() },
-                                { user: { name: 'Vikram Mehta' }, rating: 4, comment: 'Very good food and on-time delivery.', dish: 'Veg Thali', createdAt: new Date() }
-                            ]).slice(0, 2).map((review, i) => (
+                            {(stats.recentReviews || []).slice(0, 2).map((review, i) => (
                                 <div key={i} style={{ display: 'flex', gap: '12px' }}>
                                     <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#eee', overflow: 'hidden', flexShrink: 0 }}>
                                         <img src={`https://api.dicebear.com/7.x/initials/svg?seed=${review.user?.name || 'Customer'}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="user" />

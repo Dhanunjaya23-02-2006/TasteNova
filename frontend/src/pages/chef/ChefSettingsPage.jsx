@@ -5,7 +5,7 @@ import { API_URL } from '../../config';
 import toast from 'react-hot-toast';
 
 const ChefSettingsPage = () => {
-    const { user, login } = useContext(AuthContext);
+    const { user, updateUser } = useContext(AuthContext);
     const [activeTab, setActiveTab] = useState('Operating Hours');
     
     // Operating Hours State
@@ -158,6 +158,18 @@ const ChefSettingsPage = () => {
 
             if (res.ok) {
                 const updatedSettings = await res.json();
+                updateUser({
+                    ...user,
+                    businessName: updatedSettings.businessName,
+                    description: updatedSettings.description,
+                    kitchenImage: updatedSettings.kitchenImage,
+                    operatingHours: updatedSettings.operatingHours,
+                    deliveryRadius: updatedSettings.deliveryRadius,
+                    maxOrdersPerSlot: updatedSettings.maxOrdersPerSlot,
+                    isOpen: updatedSettings.isOpen,
+                    documents: updatedSettings.documents,
+                    bankDetails: updatedSettings.bankDetails
+                });
                 toast.success('Settings saved successfully!');
             } else {
                 toast.error('Failed to save settings');

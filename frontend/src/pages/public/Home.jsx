@@ -102,6 +102,15 @@ const Home = () => {
         }
     };
 
+    const handleFindFoodClick = () => {
+        if (user) {
+            navigate('/menu');
+        } else {
+            toast.error('Please login to find food near you');
+            navigate('/login');
+        }
+    };
+
     return (
         <main>
             {/* HERO SECTION */}
@@ -123,7 +132,7 @@ const Home = () => {
                         </p>
                         
                         <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-                            <button onClick={() => navigate('/menu')} className="btn btn-primary" style={{ padding: '14px 28px', fontSize: '1.05rem', borderRadius: '8px' }}>
+                            <button onClick={handleFindFoodClick} className="btn btn-primary" style={{ padding: '14px 28px', fontSize: '1.05rem', borderRadius: '8px' }}>
                                 <MapPin size={18} style={{ marginRight: '8px' }} /> Find Food Near Me
                             </button>
                             <button onClick={() => navigate('/for-chefs')} className="btn btn-outline" style={{ padding: '14px 28px', fontSize: '1.05rem', borderRadius: '8px', border: '2px solid var(--primary)' }}>
@@ -307,7 +316,7 @@ const Home = () => {
                         <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1.1rem', marginBottom: '30px' }}>Find the best home-cooked food near you.</p>
                         
                         <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-                            <button onClick={() => navigate('/menu')} style={{ background: 'white', color: 'var(--primary)', padding: '12px 24px', borderRadius: '8px', border: 'none', fontWeight: 600, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                            <button onClick={handleFindFoodClick} style={{ background: 'white', color: 'var(--primary)', padding: '12px 24px', borderRadius: '8px', border: 'none', fontWeight: 600, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                                 <MapPin size={18} /> Find Food Near Me
                             </button>
                             <button onClick={() => navigate('/for-chefs')} style={{ background: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.5)', padding: '12px 24px', borderRadius: '8px', fontWeight: 600, fontSize: '1rem', cursor: 'pointer' }}>

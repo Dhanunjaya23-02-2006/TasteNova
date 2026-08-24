@@ -130,6 +130,14 @@ exports.acceptOrder = async (req, res) => {
         order.status = 'Out for Delivery';
         await order.save();
 
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('order_status_update', order);
+            io.emit('admin_refresh');
+            if (order.user) io.to('user_' + order.user).emit('delivery_status_update', order);
+            if (order.chef) io.to('chef_' + order.chef).emit('delivery_status_update', order);
+        }
+
         res.json({ message: 'Order accepted successfully', orderId: order._id });
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
@@ -161,8 +169,163 @@ exports.updateOrderStatus = async (req, res) => {
         order.deliveryStatus = status;
         await order.save();
 
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('order_status_update', order);
+            io.emit('admin_refresh');
+            if (order.user && order.user._id) io.to('user_' + order.user._id).emit('delivery_status_update', order);
+            else if (order.user) io.to('user_' + order.user).emit('delivery_status_update', order);
+            
+            if (order.chef) io.to('chef_' + order.chef).emit('delivery_status_update', order);
+        }
+
         res.json({ message: `Order status updated to ${status}` });
     } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Get Earnings for Delivery Partner
+exports.getEarnings = async (req, res) => {
+    try {
+        const partnerId = req.user._id;
+        const user = await User.findById(partnerId);
+
+        const allOrders = await Order.find({
+            deliveryPartner: partnerId,
+            deliveryStatus: 'Delivered'
+        }).sort({ deliveredAt: -1, createdAt: -1 });
+
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const startOfWeek = new Date(startOfToday);
+        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        const summaries = {
+            today: { total: 0, delivery: 0, distance: 0, peak: 0, other: 0, trips: 0, onlineHours: user.todayOnlineHours || 0 },
+            week: { total: 0, delivery: 0, distance: 0, peak: 0, other: 0, trips: 0 },
+            month: { total: 0, delivery: 0, distance: 0, peak: 0, other: 0, trips: 0 }
+        };
+
+        const transactions = [];
+
+        allOrders.forEach(order => {
+            const date = new Date(order.deliveredAt || order.createdAt);
+            const amount = order.deliveryCharge || 50;
+
+            if (date >= startOfToday) {
+                summaries.today.total += amount;
+                summaries.today.delivery += amount;
+                summaries.today.trips += 1;
+            }
+            if (date >= startOfWeek) {
+                summaries.week.total += amount;
+                summaries.week.delivery += amount;
+                summaries.week.trips += 1;
+            }
+            if (date >= startOfMonth) {
+                summaries.month.total += amount;
+                summaries.month.delivery += amount;
+                summaries.month.trips += 1;
+            }
+
+            if (transactions.length < 20) {
+                transactions.push({
+                    id: `#${order._id.toString().slice(-6).toUpperCase()}`,
+                    type: 'Delivery',
+                    amount: amount,
+                    time: date.toLocaleString()
+                });
+            }
+        });
+
+        res.json({ summaries, transactions });
+    } catch (error) {
+        console.error('getEarnings Error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Ping Online Status (Heartbeat)
+exports.pingOnlineStatus = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        
+        // Only increment if the user is currently online
+        if (user.isOnline) {
+            // Increment by 1 minute (1/60 hours)
+            user.todayOnlineHours = (user.todayOnlineHours || 0) + (1 / 60);
+            await user.save();
+        }
+        
+        res.json({ todayOnlineHours: user.todayOnlineHours });
+    } catch (error) {
+        console.error('Error in pingOnlineStatus:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Get Incentives and Bonus Progress
+exports.getIncentives = async (req, res) => {
+    try {
+        const partnerId = req.user._id;
+
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        const todayDeliveries = await Order.countDocuments({
+            deliveryPartner: partnerId,
+            deliveryStatus: 'Delivered',
+            deliveredAt: { $gte: startOfToday }
+        });
+
+        const totalLifetimeDeliveries = await Order.countDocuments({
+            deliveryPartner: partnerId,
+            deliveryStatus: 'Delivered'
+        });
+
+        if (totalLifetimeDeliveries === 0) {
+            return res.json({
+                dailyChallenge: null,
+                activeOffers: []
+            });
+        }
+
+        // Current target is 10 deliveries for ₹150 bonus
+        const dailyTarget = 10;
+        const dailyBonus = 150;
+
+        res.json({
+            dailyChallenge: {
+                target: dailyTarget,
+                completed: todayDeliveries,
+                bonusAmount: dailyBonus
+            },
+            activeOffers: [
+                {
+                    id: 1,
+                    title: 'Peak Hours Bonus',
+                    status: 'Active',
+                    description: 'Earn ₹20 extra on every delivery between 7:00 PM and 10:00 PM today.',
+                    progress: { current: Math.min(todayDeliveries, 5), max: 5, label: 'Peak Deliveries' },
+                    color: 'var(--primary)',
+                    iconType: 'trending'
+                },
+                {
+                    id: 2,
+                    title: 'Weekly Target',
+                    status: 'Ongoing',
+                    description: 'Complete 50 deliveries this week to unlock ₹500 bonus.',
+                    progress: { current: todayDeliveries * 3, max: 50, label: 'Weekly Deliveries' }, // Dummy logic for weekly multiplier
+                    color: '#f39c12',
+                    iconType: 'check'
+                }
+            ]
+        });
+    } catch (error) {
+        console.error('getIncentives Error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };

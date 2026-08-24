@@ -2,10 +2,12 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Image, UploadCloud, Edit3, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthContext } from '../../context/AuthContext';
+import { SuperadminSocketContext } from '../../context/SuperadminSocketContext';
 import { API_URL } from '../../config';
 
 const SuperadminBanners = () => {
     const { user } = useContext(AuthContext);
+    const { lastUpdated } = useContext(SuperadminSocketContext);
     const [banners, setBanners] = useState([]);
     
     // Modal State
@@ -22,7 +24,7 @@ const SuperadminBanners = () => {
         } catch(e) { console.error(e); }
     };
 
-    useEffect(() => { if(user) fetchBanners(); }, [user]);
+    useEffect(() => { if(user) fetchBanners(); }, [user, lastUpdated]);
 
     const openModal = (banner = null) => {
         if(banner) {
@@ -122,7 +124,7 @@ const SuperadminBanners = () => {
                         </div>
                         <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                             <div>
-                                <h3 style={{ margin: '0 0 4px 0', fontSize: '1.05rem', color: 'var(--text-main)' }}>{banner.title}</h3>
+                                <h3 className="sa-modal-title">{banner.title}</h3>
                                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Link: <span style={{ color: 'var(--primary)' }}>{banner.linkUrl || 'N/A'}</span></p>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)' }}>
@@ -145,7 +147,7 @@ const SuperadminBanners = () => {
                     <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(23, 107, 69, 0.08)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
                         <UploadCloud size={28} />
                     </div>
-                    <h3 style={{ margin: '0 0 8px 0', color: 'var(--text-main)', fontSize: '1.1rem' }}>Add New Banner</h3>
+                    <h3 className="sa-modal-title">Add New Banner</h3>
                     <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', maxWidth: '200px' }}>Recommended size: 1200×600px. Max size 2MB.</p>
                 </div>
             </div>
@@ -153,17 +155,17 @@ const SuperadminBanners = () => {
             {/* Create/Edit Modal */}
             {isModalOpen && (
                 <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
-                    <div className="sa-card" style={{ width: '100%', maxWidth: '480px', padding: '28px', position: 'relative' }}>
-                        <X size={20} style={{ position: 'absolute', top: '16px', right: '16px', cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => setIsModalOpen(false)} />
-                        <h3 style={{ margin: '0 0 24px 0', fontFamily: "'DM Serif Display', serif" }}>{editingId ? 'Edit Banner' : 'Upload Banner'}</h3>
+                    <div className="sa-modal-card">
+                        <X size={20} className="sa-modal-close" onClick={() => setIsModalOpen(false)} />
+                        <h3 className="sa-modal-title">{editingId ? 'Edit Banner' : 'Upload Banner'}</h3>
                         
                         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Banner Title</label>
+                                <label className="sa-form-label">Banner Title</label>
                                 <input type="text" className="form-control" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required />
                             </div>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Image URL</label>
+                                <label className="sa-form-label">Image URL</label>
                                 <input type="url" className="form-control" value={formData.imageUrl} onChange={e => setFormData({...formData, imageUrl: e.target.value})} required placeholder="https://..." />
                             </div>
                             {formData.imageUrl && (
@@ -172,12 +174,12 @@ const SuperadminBanners = () => {
                                 </div>
                             )}
                             <div>
-                                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Link URL (Optional)</label>
+                                <label className="sa-form-label">Link URL (Optional)</label>
                                 <input type="text" className="form-control" value={formData.linkUrl} onChange={e => setFormData({...formData, linkUrl: e.target.value})} placeholder="/promo/..." />
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Type</label>
+                                    <label className="sa-form-label">Type</label>
                                     <select className="form-control" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
                                         <option value="Global">Global</option>
                                         <option value="City">City</option>
@@ -185,11 +187,11 @@ const SuperadminBanners = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Order</label>
+                                    <label className="sa-form-label">Order</label>
                                     <input type="number" className="form-control" value={formData.displayOrder} onChange={e => setFormData({...formData, displayOrder: Number(e.target.value)})} required />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Status</label>
+                                    <label className="sa-form-label">Status</label>
                                     <select className="form-control" value={formData.isActive} onChange={e => setFormData({...formData, isActive: e.target.value === 'true'})}>
                                         <option value="true">Active</option>
                                         <option value="false">Inactive</option>
@@ -208,12 +210,12 @@ const SuperadminBanners = () => {
             {/* Delete Confirmation */}
             {isDeleteModalOpen && (
                 <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsDeleteModalOpen(false); }}>
-                    <div className="sa-card" style={{ width: '100%', maxWidth: '380px', padding: '28px', position: 'relative', textAlign: 'center' }}>
-                        <X size={20} style={{ position: 'absolute', top: '16px', right: '16px', cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => setIsDeleteModalOpen(false)} />
+                    <div className="sa-modal-card">
+                        <X size={20} className="sa-modal-close" onClick={() => setIsDeleteModalOpen(false)} />
                         <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#F8D7DA', color: 'var(--error)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
                             <Trash2 size={22} />
                         </div>
-                        <h3 style={{ margin: '0 0 8px 0', color: 'var(--error)' }}>Delete Banner</h3>
+                        <h3 className="sa-modal-title">Delete Banner</h3>
                         <p style={{ margin: '0 0 24px 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Are you sure you want to delete this banner?</p>
                         
                         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>

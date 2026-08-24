@@ -2,10 +2,12 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Search, Receipt, Percent, FileText, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthContext } from '../../context/AuthContext';
+import { SuperadminSocketContext } from '../../context/SuperadminSocketContext';
 import { API_URL } from '../../config';
 
 const SuperadminTaxes = () => {
     const { user } = useContext(AuthContext);
+    const { lastUpdated } = useContext(SuperadminSocketContext);
     const [search, setSearch] = useState('');
     const [taxRules, setTaxRules] = useState([]);
     
@@ -23,7 +25,7 @@ const SuperadminTaxes = () => {
 
     useEffect(() => {
         if(user) fetchTaxes();
-    }, [user]);
+    }, [user, lastUpdated]);
 
 
     return (
@@ -84,7 +86,7 @@ const SuperadminTaxes = () => {
             {/* Table */}
             <div className="sa-card" style={{ padding: '24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-main)' }}>Tax Rules</h3>
+                    <h3 className="sa-modal-title">Tax Rules</h3>
                     <div style={{ position: 'relative' }}>
                         <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                         <input className="sa-search" style={{ paddingLeft: '32px', width: '200px' }} placeholder="Search category..." value={search} onChange={e => setSearch(e.target.value)} />
@@ -133,10 +135,10 @@ const SuperadminTaxes = () => {
             </div>
 
             {isModalOpen && (
-                <div className="modal-overlay">
-                    <div className="sa-card" style={{ width: '100%', maxWidth: '400px', padding: '24px', position: 'relative' }}>
-                        <X size={20} style={{ position: 'absolute', top: '16px', right: '16px', cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => setIsModalOpen(false)} />
-                        <h3 style={{ margin: '0 0 20px 0' }}>{editingRule ? 'Edit Tax Rule' : 'Create Tax Rule'}</h3>
+                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
+                    <div className="sa-modal-card">
+                        <X size={20} className="sa-modal-close" onClick={() => setIsModalOpen(false)} />
+                        <h3 className="sa-modal-title">{editingRule ? 'Edit Tax Rule' : 'Create Tax Rule'}</h3>
                         
                         <form onSubmit={async (e) => {
                             e.preventDefault();
@@ -169,7 +171,7 @@ const SuperadminTaxes = () => {
                             }
                         }} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>Category Name</label>
+                                <label className="sa-form-label">Category Name</label>
                                 <input 
                                     type="text" 
                                     className="form-control" 
@@ -182,7 +184,7 @@ const SuperadminTaxes = () => {
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>Tax Rate (%)</label>
+                                    <label className="sa-form-label">Tax Rate (%)</label>
                                     <input 
                                         type="number" 
                                         className="form-control" 
@@ -193,7 +195,7 @@ const SuperadminTaxes = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>Status</label>
+                                    <label className="sa-form-label">Status</label>
                                     <select 
                                         className="form-control" 
                                         value={formData.status} 

@@ -22,6 +22,12 @@ const createBooking = async (req, res) => {
         });
 
         const savedBooking = await newBooking.save();
+
+        const io = req.app.get('io');
+        if (io && savedBooking.chef) {
+            io.to('chef_' + savedBooking.chef).emit('new_booking', savedBooking);
+        }
+
         res.status(201).json(savedBooking);
     } catch (error) {
         console.error('Error creating chef booking:', error);
@@ -80,6 +86,12 @@ const acceptBooking = async (req, res) => {
         booking.status = 'Confirmed';
 
         const updatedBooking = await booking.save();
+
+        const io = req.app.get('io');
+        if (io && updatedBooking.chef) {
+            io.to('chef_' + updatedBooking.chef).emit('booking_update', updatedBooking);
+        }
+
         res.json(updatedBooking);
     } catch (error) {
         console.error('Error accepting chef booking:', error);
@@ -108,6 +120,12 @@ const rejectBooking = async (req, res) => {
         booking.status = 'Rejected';
 
         const updatedBooking = await booking.save();
+
+        const io = req.app.get('io');
+        if (io && updatedBooking.chef) {
+            io.to('chef_' + updatedBooking.chef).emit('booking_update', updatedBooking);
+        }
+
         res.json(updatedBooking);
     } catch (error) {
         console.error('Error rejecting chef booking:', error);

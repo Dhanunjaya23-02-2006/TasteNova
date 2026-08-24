@@ -44,7 +44,7 @@ const SuperadminCities = () => {
             </div>
 
             {showForm && (
-                <div className="sa-card" style={{ marginBottom: '24px', maxWidth: '600px' }}>
+                <div className="sa-modal-card">
                     <form onSubmit={handleCreate}>
                         <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
                             <div className="input-group" style={{ flex: 1 }}><label>City Name</label><input required className="form-control" value={form.name} onChange={e => setForm({...form, name: e.target.value})} /></div>
@@ -73,7 +73,7 @@ const SuperadminCities = () => {
                     <div key={c._id} className="sa-card">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div>
-                                <h3 style={{ margin: '0 0 4px 0', fontSize: '1.2rem' }}>{c.name}, {c.state}</h3>
+                                <h3 className="sa-modal-title">{c.name}, {c.state}</h3>
                                 <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Sub-Admin: {c.subAdminId ? c.subAdminId.name : 'Unassigned'}</div>
                             </div>
                             <span className={`sa-badge ${c.isActive ? 'sa-badge-green' : 'sa-badge-gray'}`}>{c.isActive ? 'Active' : 'Inactive'}</span>

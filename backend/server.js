@@ -110,6 +110,11 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('join_delivery', () => {
+        socket.join('delivery_partners');
+        debug(`Delivery socket joined room delivery_partners`);
+    });
+
     socket.on('join_ticket', (ticketId) => {
         socket.join('ticket_' + ticketId);
         debug(`Socket joined ticket room ticket_${ticketId}`);

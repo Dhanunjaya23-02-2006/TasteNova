@@ -2,6 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Package, Clock, MapPin, CheckCircle2, Navigation, Phone, ShieldCheck, Camera, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 import api from '../../api';
+import io from 'socket.io-client';
+import { API_URL } from '../../config';
+import { AuthContext } from '../../context/AuthContext';
+import { useContext } from 'react';
+import toast from 'react-hot-toast';
 
 const DeliveryOrdersPage = () => {
     const [activeTab, setActiveTab] = useState('active'); // new, active, history
@@ -9,6 +14,29 @@ const DeliveryOrdersPage = () => {
     const [otp, setOtp] = useState('');
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(false);
+    const { user } = useContext(AuthContext);
+
+    useEffect(() => {
+        if (!user || !user.token) return;
+        const socket = io(API_URL.replace('/api', ''), {
+            auth: { token: user.token }
+        });
+
+        socket.on('connect', () => {
+            socket.emit('join_delivery');
+        });
+
+        socket.on('new_delivery_request', (order) => {
+            toast.success('New delivery request!');
+            fetchOrders();
+        });
+
+        socket.on('order_status_update', (order) => {
+            fetchOrders();
+        });
+
+        return () => socket.disconnect();
+    }, [user, activeTab]);
 
     useEffect(() => {
         fetchOrders();

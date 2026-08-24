@@ -69,35 +69,35 @@ const SubadminChefs = () => {
                 <div className="sa-empty">No chefs found.</div>
             ) : (
                 <div className="sa-table-wrap">
-                <table className="sa-table">
+                <table className="sa-table responsive-table">
                     <thead>
                         <tr><th>Kitchen</th><th>Name</th><th>Email</th><th>Rating</th><th>Verified</th><th>Status</th><th>Actions</th></tr>
                     </thead>
                     <tbody>
                         {chefs.map(c => (
                             <tr key={c._id}>
-                                <td style={{ fontWeight: 600 }}>{c.kitchenName || c.businessName || '—'}</td>
-                                <td>{c.name}</td>
-                                <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{c.email}</td>
-                                <td>{c.rating?.toFixed(1) || '—'}</td>
-                                <td>
-                                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                <td data-label="Kitchen" style={{ fontWeight: 600 }}>{c.kitchenName || c.businessName || '—'}</td>
+                                <td data-label="Name">{c.name}</td>
+                                <td data-label="Email" style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{c.email}</td>
+                                <td data-label="Rating">{c.rating?.toFixed(1) || '—'}</td>
+                                <td data-label="Verified">
+                                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: window.innerWidth < 768 ? 'flex-end' : 'flex-start' }}>
                                         {c.isIdVerified && <span className="sa-badge sa-badge-green">ID</span>}
                                         {c.isFssaiVerified && <span className="sa-badge sa-badge-green">FSSAI</span>}
                                         {c.isKitchenVerified && <span className="sa-badge sa-badge-green">Kitchen</span>}
                                         {!c.isIdVerified && !c.isFssaiVerified && !c.isKitchenVerified && <span className="sa-badge sa-badge-gray">None</span>}
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Status">
                                     <span className={`sa-badge ${c.status === 'active' ? 'sa-badge-green' : c.status === 'suspended' ? 'sa-badge-red' : 'sa-badge-yellow'}`}>
                                         {c.status}
                                     </span>
                                 </td>
-                                <td>
-                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                <td data-label="Actions">
+                                    <div style={{ display: 'flex', gap: '6px', justifyContent: window.innerWidth < 768 ? 'flex-end' : 'flex-start' }}>
                                         {c.status === 'pending' && (
                                             <>
-                                                <button className="btn btn-primary" style={{ padding: '3px 10px', fontSize: '0.78rem' }} onClick={() => handleStatus(c._id, 'active')}>Approve</button>
+                                                <button className="btn btn-outline" style={{ padding: '3px 10px', fontSize: '0.78rem', color: 'var(--success)' }} onClick={() => handleStatus(c._id, 'active')}>Approve</button>
                                                 <button className="btn btn-outline" style={{ padding: '3px 10px', fontSize: '0.78rem', color: 'var(--error)' }} onClick={() => handleStatus(c._id, 'suspended')}>Reject</button>
                                             </>
                                         )}
@@ -105,7 +105,7 @@ const SubadminChefs = () => {
                                             <button className="btn btn-outline" style={{ padding: '3px 10px', fontSize: '0.78rem', color: 'var(--error)' }} onClick={() => handleStatus(c._id, 'suspended')}>Suspend</button>
                                         )}
                                         {c.status === 'suspended' && (
-                                            <button className="btn btn-outline" style={{ padding: '3px 10px', fontSize: '0.78rem' }} onClick={() => handleStatus(c._id, 'active')}>Reactivate</button>
+                                            <button className="btn btn-outline" style={{ padding: '3px 10px', fontSize: '0.78rem', color: 'var(--success)' }} onClick={() => handleStatus(c._id, 'active')}>Unsuspend</button>
                                         )}
                                     </div>
                                 </td>

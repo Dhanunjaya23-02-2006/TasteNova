@@ -150,7 +150,7 @@ const MenuTab = () => {
 
             {/* Table Area */}
             <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid var(--border-subtle)', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                         <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                             <th style={{ textAlign: 'left', padding: '16px 24px', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.85rem' }}>Dish</th>
@@ -169,7 +169,7 @@ const MenuTab = () => {
                         ) : (
                             filteredItems.map(item => (
                                 <tr key={item._id} style={{ borderBottom: '1px solid var(--border-subtle)', transition: 'background 0.2s' }}>
-                                    <td style={{ padding: '16px 24px' }}>
+                                    <td data-label="Dish" style={{ padding: '16px 24px' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                             <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: '#eee', overflow: 'hidden' }}>
                                                 {item.image ? (
@@ -183,17 +183,17 @@ const MenuTab = () => {
                                             <span style={{ fontWeight: 700, color: '#0F3F26', fontSize: '0.95rem' }}>{item.name}</span>
                                         </div>
                                     </td>
-                                    <td style={{ padding: '16px 24px', color: 'var(--text-main)', fontSize: '0.9rem' }}>
+                                    <td data-label="Category" style={{ padding: '16px 24px', color: 'var(--text-main)', fontSize: '0.9rem' }}>
                                         {/* Mock category if undefined */}
                                         {item.category || (item.name.toLowerCase().includes('biryani') ? 'Biryani' : item.name.toLowerCase().includes('thali') ? 'Thali' : 'Main Course')}
                                     </td>
-                                    <td style={{ padding: '16px 24px', color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: 600 }}>
+                                    <td data-label="Price" style={{ padding: '16px 24px', color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: 600 }}>
                                         ₹{item.price}
                                     </td>
-                                    <td style={{ padding: '16px 24px', color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: 600 }}>
+                                    <td data-label="Offer Price" style={{ padding: '16px 24px', color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: 600 }}>
                                         {item.offerPrice ? `₹${item.offerPrice}` : '-'}
                                     </td>
-                                    <td style={{ padding: '16px 24px' }}>
+                                    <td data-label="Status" style={{ padding: '16px 24px' }}>
                                         <span style={{ 
                                             color: item.available ? '#27ae60' : '#e74c3c', 
                                             fontWeight: 700, 
@@ -202,7 +202,7 @@ const MenuTab = () => {
                                             {item.available ? 'Active' : 'Inactive'}
                                         </span>
                                     </td>
-                                    <td style={{ padding: '16px 24px', textAlign: 'center' }}>
+                                    <td data-label="Actions" style={{ padding: '16px 24px', textAlign: 'center' }}>
                                         <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
                                             <button onClick={() => openEdit(item)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
                                                 <Edit3 size={16} />
@@ -240,25 +240,25 @@ const MenuTab = () => {
                         <form onSubmit={handleSaveMenu} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 600 }}>Dish Name</label>
-                                <input type="text" className="input" required value={menuData.name} onChange={e => setMenuData({...menuData, name: e.target.value})} style={{ width: '100%' }} />
+                                <input type="text" className="form-control" required value={menuData.name} onChange={e => setMenuData({...menuData, name: e.target.value})} />
                             </div>
                             <div style={{ display: 'flex', gap: '16px' }}>
                                 <div style={{ flex: 1 }}>
                                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 600 }}>Price (₹)</label>
-                                    <input type="number" className="input" required value={menuData.price} onChange={e => setMenuData({...menuData, price: e.target.value})} style={{ width: '100%' }} />
+                                    <input type="number" className="form-control" required value={menuData.price} onChange={e => setMenuData({...menuData, price: e.target.value})} />
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 600 }}>Offer Price (₹)</label>
-                                    <input type="number" className="input" value={menuData.offerPrice} onChange={e => setMenuData({...menuData, offerPrice: e.target.value})} style={{ width: '100%' }} />
+                                    <input type="number" className="form-control" value={menuData.offerPrice} onChange={e => setMenuData({...menuData, offerPrice: e.target.value})} />
                                 </div>
                             </div>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 600 }}>Image URL</label>
-                                <input type="text" className="input" value={menuData.image} onChange={e => setMenuData({...menuData, image: e.target.value})} style={{ width: '100%' }} />
+                                <input type="text" className="form-control" value={menuData.image} onChange={e => setMenuData({...menuData, image: e.target.value})} />
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-                                <input type="checkbox" id="available" checked={menuData.available} onChange={e => setMenuData({...menuData, available: e.target.checked})} />
-                                <label htmlFor="available" style={{ fontSize: '0.9rem', fontWeight: 600 }}>Available (Active)</label>
+                                <input type="checkbox" id="available" checked={menuData.available} onChange={e => setMenuData({...menuData, available: e.target.checked})} style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }} />
+                                <label htmlFor="available" style={{ fontSize: '0.95rem', fontWeight: 500, cursor: 'pointer' }}>Available (Active)</label>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
                                 <button type="button" onClick={() => setIsFormOpen(false)} className="btn" style={{ background: '#eee', color: 'var(--text-main)' }}>Cancel</button>

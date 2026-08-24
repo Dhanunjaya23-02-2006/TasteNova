@@ -23,11 +23,9 @@ const offerSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Validation: Ensure city is provided if scope is 'City'
-offerSchema.pre('save', function(next) {
+offerSchema.pre('save', function() {
     if (this.scope === 'City' && !this.city) {
-        next(new Error('City must be specified for City-scoped offers.'));
-    } else {
-        next();
+        throw new Error('City must be specified for City-scoped offers.');
     }
 });
 

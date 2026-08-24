@@ -74,26 +74,26 @@ const AdminOrders = () => {
                 <div className="sa-empty">No orders found.</div>
             ) : (
                 <div className="sa-table-wrap">
-                <table className="sa-table">
+                <table className="sa-table responsive-table">
                     <thead>
                         <tr><th>Order</th><th>Customer</th><th>Chef</th><th>Amount</th><th>Status</th><th>Refund</th><th>Actions</th></tr>
                     </thead>
                     <tbody>
                         {orders.map(o => (
                             <tr key={o._id}>
-                                <td style={{ fontWeight: 600 }}>#{o._id.slice(-8)}</td>
-                                <td>{o.user?.name || 'Guest'}</td>
-                                <td>{o.chef?.kitchenName || o.chef?.name || '—'}</td>
-                                <td>₹{o.totalPrice}</td>
-                                <td><span className={`sa-badge ${getBadgeClass(o.status)}`}>{o.status}</span></td>
-                                <td>
+                                <td data-label="Order" style={{ fontWeight: 600 }}>#{o._id.slice(-8)}</td>
+                                <td data-label="Customer">{o.user?.name || 'Guest'}</td>
+                                <td data-label="Chef">{o.chef?.kitchenName || o.chef?.name || '—'}</td>
+                                <td data-label="Amount">₹{o.totalPrice}</td>
+                                <td data-label="Status"><span className={`sa-badge ${getBadgeClass(o.status)}`}>{o.status}</span></td>
+                                <td data-label="Refund">
                                     {o.refundStatus !== 'None' && (
                                         <span className={`sa-badge ${o.refundStatus === 'Approved' || o.refundStatus === 'Completed' ? 'sa-badge-green' : o.refundStatus === 'Escalated' ? 'sa-badge-red' : 'sa-badge-yellow'}`}>
                                             {o.refundStatus}
                                         </span>
                                     )}
                                 </td>
-                                <td>
+                                <td data-label="Actions">
                                     {!['Completed', 'Rejected'].includes(o.status) && (
                                         <button className="btn btn-outline" style={{ padding: '3px 10px', fontSize: '0.78rem', color: 'var(--error)' }} onClick={() => handleCancel(o._id)}>
                                             Cancel

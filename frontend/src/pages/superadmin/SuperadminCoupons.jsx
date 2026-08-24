@@ -2,10 +2,12 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Search, Ticket, Users, Copy, X, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthContext } from '../../context/AuthContext';
+import { SuperadminSocketContext } from '../../context/SuperadminSocketContext';
 import { API_URL } from '../../config';
 
 const SuperadminCoupons = () => {
     const { user } = useContext(AuthContext);
+    const { lastUpdated } = useContext(SuperadminSocketContext);
     const [search, setSearch] = useState('');
     const [coupons, setCoupons] = useState([]);
     
@@ -29,7 +31,7 @@ const SuperadminCoupons = () => {
         } catch(e) { console.error(e); }
     };
 
-    useEffect(() => { if(user) fetchCoupons(); }, [user]);
+    useEffect(() => { if(user) fetchCoupons(); }, [user, lastUpdated]);
 
     const openModal = (coupon = null) => {
         if(coupon) {
@@ -149,7 +151,7 @@ const SuperadminCoupons = () => {
             {/* Table */}
             <div className="sa-card" style={{ padding: '24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-main)' }}>Coupon List</h3>
+                    <h3 className="sa-modal-title">Coupon List</h3>
                     <div style={{ position: 'relative' }}>
                         <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                         <input className="sa-search" style={{ paddingLeft: '32px', width: '250px' }} placeholder="Search codes..." value={search} onChange={e => setSearch(e.target.value)} />
@@ -217,22 +219,22 @@ const SuperadminCoupons = () => {
             {/* Create/Edit Modal */}
             {isModalOpen && (
                 <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
-                    <div className="sa-card" style={{ width: '100%', maxWidth: '520px', padding: '28px', position: 'relative' }}>
-                        <X size={20} style={{ position: 'absolute', top: '16px', right: '16px', cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => setIsModalOpen(false)} />
-                        <h3 style={{ margin: '0 0 24px 0', fontFamily: "'DM Serif Display', serif" }}>{editingId ? 'Edit Coupon' : 'Generate Coupon'}</h3>
+                    <div className="sa-modal-card">
+                        <X size={20} className="sa-modal-close" onClick={() => setIsModalOpen(false)} />
+                        <h3 className="sa-modal-title">{editingId ? 'Edit Coupon' : 'Generate Coupon'}</h3>
                         
                         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Coupon Code</label>
+                                <label className="sa-form-label">Coupon Code</label>
                                 <input type="text" className="form-control" value={formData.code} onChange={e => setFormData({...formData, code: e.target.value.toUpperCase()})} required />
                             </div>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Description</label>
+                                <label className="sa-form-label">Description</label>
                                 <input type="text" className="form-control" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} required />
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Discount Type</label>
+                                    <label className="sa-form-label">Discount Type</label>
                                     <select className="form-control" value={formData.discountType} onChange={e => setFormData({...formData, discountType: e.target.value})}>
                                         <option value="percentage">Percentage</option>
                                         <option value="flat">Flat Amount</option>
@@ -240,33 +242,33 @@ const SuperadminCoupons = () => {
                                 </div>
                                 {formData.discountType === 'percentage' ? (
                                     <div>
-                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Percentage (%)</label>
+                                        <label className="sa-form-label">Percentage (%)</label>
                                         <input type="number" className="form-control" value={formData.discountPercentage} onChange={e => setFormData({...formData, discountPercentage: Number(e.target.value)})} />
                                     </div>
                                 ) : (
                                     <div>
-                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Flat Amount (₹)</label>
+                                        <label className="sa-form-label">Flat Amount (₹)</label>
                                         <input type="number" className="form-control" value={formData.discountFlat} onChange={e => setFormData({...formData, discountFlat: Number(e.target.value)})} />
                                     </div>
                                 )}
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Max Discount (₹)</label>
+                                    <label className="sa-form-label">Max Discount (₹)</label>
                                     <input type="number" className="form-control" value={formData.maxDiscountAmount} onChange={e => setFormData({...formData, maxDiscountAmount: Number(e.target.value)})} required />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Min Order Value (₹)</label>
+                                    <label className="sa-form-label">Min Order Value (₹)</label>
                                     <input type="number" className="form-control" value={formData.minOrderValue} onChange={e => setFormData({...formData, minOrderValue: Number(e.target.value)})} />
                                 </div>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Usage Limit</label>
+                                    <label className="sa-form-label">Usage Limit</label>
                                     <input type="number" className="form-control" value={formData.usageLimit} onChange={e => setFormData({...formData, usageLimit: Number(e.target.value)})} placeholder="0 = Unlimited" />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Valid Until</label>
+                                    <label className="sa-form-label">Valid Until</label>
                                     <input type="date" className="form-control" value={formData.validUntil} onChange={e => setFormData({...formData, validUntil: e.target.value})} required />
                                 </div>
                             </div>
@@ -282,12 +284,12 @@ const SuperadminCoupons = () => {
             {/* Delete Confirmation */}
             {isDeleteModalOpen && (
                 <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsDeleteModalOpen(false); }}>
-                    <div className="sa-card" style={{ width: '100%', maxWidth: '380px', padding: '28px', position: 'relative', textAlign: 'center' }}>
-                        <X size={20} style={{ position: 'absolute', top: '16px', right: '16px', cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => setIsDeleteModalOpen(false)} />
+                    <div className="sa-modal-card">
+                        <X size={20} className="sa-modal-close" onClick={() => setIsDeleteModalOpen(false)} />
                         <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#F8D7DA', color: 'var(--error)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
                             <Trash2 size={22} />
                         </div>
-                        <h3 style={{ margin: '0 0 8px 0', color: 'var(--error)' }}>Delete Coupon</h3>
+                        <h3 className="sa-modal-title">Delete Coupon</h3>
                         <p style={{ margin: '0 0 24px 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Are you sure you want to delete this coupon? This action cannot be undone.</p>
                         
                         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { API_URL } from '../../config';
 import { Star, MessageSquare } from 'lucide-react';
+import io from 'socket.io-client';
+import toast from 'react-hot-toast';
 
 const ChefReviewsPage = () => {
     const { user } = useContext(AuthContext);
@@ -22,7 +24,16 @@ const ChefReviewsPage = () => {
                 setLoading(false);
             }
         };
-        if (user) fetchReviews();
+        if (user) {
+            fetchReviews();
+            const socket = io(API_URL.replace('/api', ''));
+            socket.emit('join_chef', user._id);
+            socket.on('new_review', () => {
+                toast.success('NEW REVIEW RECEIVED!', { icon: '⭐' });
+                fetchReviews();
+            });
+            return () => socket.disconnect();
+        }
     }, [user]);
 
     const calculateBreakdown = () => {

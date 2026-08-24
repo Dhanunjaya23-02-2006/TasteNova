@@ -5,7 +5,10 @@ const {
     toggleOnlineStatus, 
     getOrders, 
     acceptOrder, 
-    updateOrderStatus 
+    updateOrderStatus,
+    getEarnings,
+    getIncentives,
+    pingOnlineStatus
 } = require('../controllers/deliveryController');
 const { protect, delivery } = require('../middleware/authMiddleware');
 
@@ -18,5 +21,8 @@ router.post('/toggle-status', toggleOnlineStatus);
 router.get('/orders', getOrders);
 router.post('/orders/accept', acceptOrder);
 router.post('/orders/update-status', updateOrderStatus);
+router.get('/earnings', getEarnings);
+router.get('/incentives', getIncentives);
+router.post('/heartbeat', pingOnlineStatus);
 
 module.exports = router;

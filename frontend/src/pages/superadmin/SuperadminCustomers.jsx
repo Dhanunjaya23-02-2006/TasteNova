@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
+import { SuperadminSocketContext } from '../../context/SuperadminSocketContext';
 import { Users, Search, Filter, UserCheck, UserPlus, UserX, Eye, X, ShoppingBag, Wallet, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { API_URL } from '../../config';
 
 const SuperadminCustomers = () => {
     const { user } = useContext(AuthContext);
+    const { lastUpdated } = useContext(SuperadminSocketContext);
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -45,7 +47,7 @@ const SuperadminCustomers = () => {
             fetchCities();
             fetchStats();
         }
-    }, [user]);
+    }, [user, lastUpdated]);
 
     useEffect(() => {
         const fetchCustomers = async () => {
@@ -290,8 +292,8 @@ const SuperadminCustomers = () => {
             {/* Customer Detail Modal */}
             {selectedCustomer && (
                 <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) { setSelectedCustomer(null); setCustomerDetail(null); } }}>
-                    <div className="sa-card" style={{ width: '100%', maxWidth: '600px', padding: '28px', position: 'relative', maxHeight: 'calc(100vh - 80px)', overflowY: 'auto' }}>
-                        <X size={20} style={{ position: 'absolute', top: '16px', right: '16px', cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => { setSelectedCustomer(null); setCustomerDetail(null); }} />
+                    <div className="sa-modal-card">
+                        <X size={20} className="sa-modal-close" onClick={() => { setSelectedCustomer(null); setCustomerDetail(null); }} />
                         
                         {detailLoading ? (
                             <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading customer details...</div>
@@ -303,7 +305,7 @@ const SuperadminCustomers = () => {
                                         {customerDetail.name?.charAt(0).toUpperCase()}
                                     </div>
                                     <div>
-                                        <h3 style={{ margin: '0 0 4px 0', fontFamily: "'DM Serif Display', serif", fontSize: '1.3rem' }}>{customerDetail.name}</h3>
+                                        <h3 className="sa-modal-title">{customerDetail.name}</h3>
                                         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{customerDetail.email} • {customerDetail.phone}</div>
                                         <div style={{ marginTop: '6px', display: 'flex', gap: '8px', alignItems: 'center' }}>
                                             <span className={`sa-badge ${customerDetail.status === 'active' ? 'sa-badge-green' : 'sa-badge-red'}`}>{customerDetail.status}</span>

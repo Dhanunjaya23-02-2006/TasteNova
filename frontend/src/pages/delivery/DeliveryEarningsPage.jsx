@@ -1,24 +1,36 @@
-import React, { useState } from 'react';
-import { IndianRupee, TrendingUp, Calendar, ArrowUpRight, ArrowDownRight, Download, Filter } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { IndianRupee, TrendingUp, Calendar, ArrowUpRight, ArrowDownRight, Download, Filter, Loader } from 'lucide-react';
+import api from '../../api';
 
 const DeliveryEarningsPage = () => {
     const [timeframe, setTimeframe] = useState('today');
+    const [loading, setLoading] = useState(true);
+    const [earningsData, setEarningsData] = useState({
+        summaries: {
+            today: { total: 0, delivery: 0, distance: 0, peak: 0, other: 0, trips: 0 },
+            week: { total: 0, delivery: 0, distance: 0, peak: 0, other: 0, trips: 0 },
+            month: { total: 0, delivery: 0, distance: 0, peak: 0, other: 0, trips: 0 }
+        },
+        transactions: []
+    });
 
-    const summaries = {
-        today: { total: 780, delivery: 620, distance: 80, peak: 50, other: 30 },
-        week: { total: 5420, delivery: 4120, distance: 750, peak: 350, other: 200 },
-        month: { total: 21840, delivery: 16400, distance: 3100, peak: 1540, other: 800 }
+    useEffect(() => {
+        fetchEarnings();
+    }, []);
+
+    const fetchEarnings = async () => {
+        try {
+            const res = await api.get('/delivery/earnings');
+            setEarningsData(res.data);
+        } catch (error) {
+            console.error('Error fetching earnings:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const currentSummary = summaries[timeframe];
-
-    const transactions = [
-        { id: '#10294', type: 'Delivery', amount: 68, time: 'Today, 02:30 PM' },
-        { id: '#10290', type: 'Delivery', amount: 82, time: 'Today, 01:15 PM' },
-        { id: '#10286', type: 'Delivery + Peak', amount: 75, time: 'Today, 12:40 PM' },
-        { id: '#10271', type: 'Distance Bonus', amount: 90, time: 'Yesterday, 08:30 PM' },
-        { id: '#10265', type: 'Delivery', amount: 60, time: 'Yesterday, 07:15 PM' },
-    ];
+    const currentSummary = earningsData.summaries[timeframe] || earningsData.summaries.today;
+    const transactions = earningsData.transactions || [];
 
     const StatBox = ({ label, value, main }) => (
         <div style={{ flex: 1, padding: '20px', background: main ? 'var(--primary)' : '#fff', color: main ? '#fff' : 'var(--text-main)', borderRadius: '12px', border: main ? 'none' : '1px solid var(--border-subtle)' }}>
@@ -33,6 +45,15 @@ const DeliveryEarningsPage = () => {
             <span style={{ fontWeight: 700 }}>₹{amount.toLocaleString()}</span>
         </div>
     );
+
+    if (loading) {
+        return (
+            <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <Loader className="spin" size={32} style={{ margin: '0 auto 16px', color: 'var(--primary)' }} />
+                <div>Loading earnings data...</div>
+            </div>
+        );
+    }
 
     return (
         <div>
@@ -69,8 +90,8 @@ const DeliveryEarningsPage = () => {
                 <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <StatBox label={`${timeframe.charAt(0).toUpperCase() + timeframe.slice(1)}'s Earnings`} value={currentSummary.total} main={true} />
                     <div style={{ display: 'flex', gap: '16px' }}>
-                        <StatBox label="Trips" value={timeframe === 'today' ? 8 : timeframe === 'week' ? 42 : 164} />
-                        <StatBox label="Online Hrs" value={timeframe === 'today' ? '5.2' : timeframe === 'week' ? '32.5' : '124.0'} />
+                        <StatBox label="Trips" value={currentSummary.trips || 0} />
+                        <StatBox label="Online Hrs" value={(currentSummary.onlineHours || 0).toFixed(1)} />
                     </div>
                 </div>
 

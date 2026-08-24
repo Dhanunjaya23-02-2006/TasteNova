@@ -415,6 +415,49 @@ const Checkout = () => {
                     opacity: 0.7;
                     cursor: not-allowed;
                 }
+                
+                /* Mobile Adjustments */
+                @media (max-width: 768px) {
+                    .stepper .step span {
+                        font-size: 0.75rem;
+                    }
+                    .stepper .line {
+                        width: 20px;
+                    }
+                    .cart-item {
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 12px;
+                    }
+                    .cart-item-info {
+                        width: 100%;
+                    }
+                    .cart-item > div:not(.cart-item-info):not(button) {
+                        width: auto;
+                        text-align: left;
+                    }
+                    .cart-item > button {
+                        position: absolute;
+                        top: 16px;
+                        right: 0;
+                    }
+                    .cart-item {
+                        position: relative;
+                    }
+                    .payment-tabs {
+                        flex-direction: row;
+                        border-right: none;
+                        border-bottom: 1px solid #eee;
+                        padding-right: 0;
+                        padding-bottom: 12px;
+                        overflow-x: auto;
+                        white-space: nowrap;
+                    }
+                    .payment-content {
+                        padding-left: 0;
+                        padding-top: 16px;
+                    }
+                }
                 `}
             </style>
 

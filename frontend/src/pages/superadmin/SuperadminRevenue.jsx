@@ -3,10 +3,12 @@ import { IndianRupee, TrendingUp, Calendar, ArrowRight, Download, BarChart2, Pie
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { AuthContext } from '../../context/AuthContext';
+import { SuperadminSocketContext } from '../../context/SuperadminSocketContext';
 import { API_URL } from '../../config';
 
 const SuperadminRevenue = () => {
     const { user } = useContext(AuthContext);
+    const { lastUpdated } = useContext(SuperadminSocketContext);
     const [period, setPeriod] = useState('This Month');
     const [statsData, setStatsData] = useState({ totalGMV: 0, platformFees: 0, deliveryFees: 0, netProfit: 0 });
 

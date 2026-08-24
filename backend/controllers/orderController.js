@@ -220,6 +220,11 @@ const updateOrderStatus = async (req, res) => {
 
         const updatedOrder = await order.save();
 
+        const io = req.app.get('io');
+        if (io && updatedOrder.chef) {
+            io.to('chef_' + updatedOrder.chef).emit('order_status_update', updatedOrder);
+        }
+
         if (updatedOrder.status === 'Completed' || updatedOrder.deliveryStatus === 'Delivered') {
             await processOrderPayout(updatedOrder);
 
@@ -250,10 +255,12 @@ const updateOrderStatus = async (req, res) => {
             }
         }
 
-        const io = req.app.get('io');
         if (io) {
             io.emit('order_status_update', updatedOrder);
             io.emit('admin_refresh');
+            if (updatedOrder.status === 'Ready' && updatedOrder.deliveryStatus === 'Pending') {
+                io.to('delivery_partners').emit('new_delivery_request', updatedOrder);
+            }
         }
 
         res.json(updatedOrder);
@@ -430,7 +437,8 @@ const getChefStats = async (req, res) => {
 
         // Performance metrics (mocked/calculated)
         const orderCompletionRate = orders.length > 0 ? Math.round((completedOrders.length / orders.length) * 100) : 100;
-        const onTimeDelivery = 92; // Mocked for now
+        // In a full implementation, calculate this from actual deliveredAt vs expected time.
+        const onTimeDelivery = 100; 
         const feedbackScore = req.user.rating ? (req.user.rating).toFixed(1) : '0.0';
         // Calculate Analytics for Growth Hub
         const now = new Date();

@@ -48,9 +48,13 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
 const authUser = async (req, res) => {
     try {
         const { email, password } = req.body;
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Please provide email and password' });
+        }
+
         const user = await User.findOne({ email });
 
-        if (user && (await bcrypt.compare(password, user.password))) {
+        if (user && user.password && (await bcrypt.compare(password, user.password))) {
             if (user.status === 'suspended') {
                 return res.status(403).json({ message: 'Your account has been suspended. Please contact support.' });
             }
@@ -59,15 +63,17 @@ const authUser = async (req, res) => {
             const refreshToken = generateRefreshToken(user._id);
 
             // Save refresh token to user in DB
-            user.refreshTokens = user.refreshTokens || [];
-            user.refreshTokens.push(refreshToken);
+            const updateData = {
+                $push: { refreshTokens: refreshToken }
+            };
 
             // Force kitchen closed on new login session so they have to manually open it
             if (user.role === 'chef') {
-                user.isOpen = false;
+                updateData.$set = { isOpen: false };
+                user.isOpen = false; // Update local object for response if needed
             }
 
-            await user.save();
+            await User.updateOne({ _id: user._id }, updateData);
 
             setAuthCookies(res, accessToken, refreshToken);
 

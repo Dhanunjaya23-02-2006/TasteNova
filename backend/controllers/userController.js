@@ -222,26 +222,45 @@ const verifyOtp = async (req, res) => {
 // @route   POST /api/users/login
 // @access  Public
 const authUser = async (req, res) => {
-    const { email, password } = req.body;
+    try {
+        const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
-
-    if (user && (await bcrypt.compare(password, user.password))) {
-        if (user.status === 'suspended') {
-            return res.status(403).json({ message: 'Your account has been suspended. Please contact support.' });
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Please provide email and password' });
         }
-        res.json({
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            status: user.status,
-            addresses: user.addresses,
-            following: user.following || [],
-            token: generateToken(user._id)
-        });
-    } else {
-        res.status(401).json({ message: 'Invalid email or password' });
+
+        const user = await User.findOne({ email });
+
+        if (user && user.password && (await bcrypt.compare(password, user.password))) {
+            if (user.status === 'suspended') {
+                return res.status(403).json({ message: 'Your account has been suspended. Please contact support.' });
+            }
+            res.json({
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                role: user.role,
+                status: user.status,
+                addresses: user.addresses,
+                businessName: user.businessName,
+                description: user.description,
+                profilePic: user.profilePic,
+                kitchenImage: user.kitchenImage,
+                isIdVerified: user.isIdVerified,
+                isFssaiVerified: user.isFssaiVerified,
+                isKitchenVerified: user.isKitchenVerified,
+                rating: user.rating,
+                numReviews: user.numReviews,
+                following: user.following || [],
+                token: generateToken(user._id)
+            });
+        } else {
+            res.status(401).json({ message: 'Invalid email or password' });
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ message: 'Server error during login', error: error.message });
     }
 };
 
@@ -249,20 +268,34 @@ const authUser = async (req, res) => {
 // @route   GET /api/users/profile
 // @access  Private
 const getUserProfile = async (req, res) => {
-    const user = await User.findById(req.user._id);
+    try {
+        const user = await User.findById(req.user._id);
 
-    if (user) {
-        res.json({
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            phone: user.phone,
-            addresses: user.addresses,
-            role: user.role,
-            following: user.following || []
-        });
-    } else {
-        res.status(404).json({ message: 'User not found' });
+        if (user) {
+            res.json({
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                addresses: user.addresses,
+                role: user.role,
+                businessName: user.businessName,
+                description: user.description,
+                profilePic: user.profilePic,
+                kitchenImage: user.kitchenImage,
+                isIdVerified: user.isIdVerified,
+                isFssaiVerified: user.isFssaiVerified,
+                isKitchenVerified: user.isKitchenVerified,
+                rating: user.rating,
+                numReviews: user.numReviews,
+                following: user.following || []
+            });
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        console.error('Error in getUserProfile:', error);
+        res.status(500).json({ message: 'Server Error' });
     }
 };
 
@@ -290,48 +323,88 @@ const getAdminLocation = async (req, res) => {
 // @route   PUT /api/users/profile
 // @access  Private
 const updateUserProfile = async (req, res) => {
-    const user = await User.findById(req.user._id);
+    try {
+        const user = await User.findById(req.user._id);
 
-    if (user) {
-        user.name = req.body.name || user.name;
-        user.phone = req.body.phone || user.phone;
-        if (req.body.role && ['user', 'chef', 'delivery'].includes(req.body.role)) {
-            user.role = req.body.role;
+        if (user) {
+            user.name = req.body.name || user.name;
+            user.phone = req.body.phone || user.phone;
+            if (req.body.role && ['user', 'chef', 'delivery'].includes(req.body.role)) {
+                user.role = req.body.role;
+            }
+            user.businessName = req.body.businessName || user.businessName;
+            user.description = req.body.description || user.description;
+            user.kitchenImage = req.body.kitchenImage || user.kitchenImage;
+            if (req.body.profilePic !== undefined) {
+                user.profilePic = req.body.profilePic;
+            }
+
+            if (req.body.deliveryRadius) {
+                user.deliveryRadius = req.body.deliveryRadius;
+            }
+            if (req.body.kitchenLocation) {
+                user.kitchenLocation = req.body.kitchenLocation;
+            }
+
+            if (req.body.addresses) {
+                user.addresses = req.body.addresses;
+            }
+
+            if (req.body.vehicleType) {
+                user.vehicleType = req.body.vehicleType;
+            }
+            if (req.body.vehicleNumber) {
+                user.vehicleNumber = req.body.vehicleNumber;
+            }
+            if (req.body.bankDetails) {
+                user.bankDetails = {
+                    ...user.bankDetails,
+                    ...req.body.bankDetails
+                };
+            }
+            if (req.body.documents) {
+                user.documents = {
+                    ...user.documents,
+                    ...req.body.documents
+                };
+            }
+
+            if (req.body.password) {
+                const salt = await bcrypt.genSalt(10);
+                user.password = await bcrypt.hash(req.body.password, salt);
+            }
+
+            const updatedUser = await user.save();
+
+            res.json({
+                _id: updatedUser._id,
+                name: updatedUser.name,
+                email: updatedUser.email,
+                phone: updatedUser.phone,
+                role: updatedUser.role,
+                businessName: updatedUser.businessName,
+                description: updatedUser.description,
+                profilePic: updatedUser.profilePic,
+                kitchenImage: updatedUser.kitchenImage,
+                isIdVerified: updatedUser.isIdVerified,
+                isFssaiVerified: updatedUser.isFssaiVerified,
+                isKitchenVerified: updatedUser.isKitchenVerified,
+                rating: updatedUser.rating,
+                numReviews: updatedUser.numReviews,
+                addresses: updatedUser.addresses,
+                vehicleType: updatedUser.vehicleType,
+                vehicleNumber: updatedUser.vehicleNumber,
+                bankDetails: updatedUser.bankDetails,
+                documents: updatedUser.documents,
+                following: updatedUser.following || [],
+                token: generateToken(updatedUser._id),
+            });
+        } else {
+            res.status(404).json({ message: 'User not found' });
         }
-        user.businessName = req.body.businessName || user.businessName;
-        user.description = req.body.description || user.description;
-        user.kitchenImage = req.body.kitchenImage || user.kitchenImage;
-
-        if (req.body.deliveryRadius) {
-            user.deliveryRadius = req.body.deliveryRadius;
-        }
-        if (req.body.kitchenLocation) {
-            user.kitchenLocation = req.body.kitchenLocation;
-        }
-
-        if (req.body.addresses) {
-            user.addresses = req.body.addresses;
-        }
-
-        if (req.body.password) {
-            const salt = await bcrypt.genSalt(10);
-            user.password = await bcrypt.hash(req.body.password, salt);
-        }
-
-        const updatedUser = await user.save();
-
-        res.json({
-            _id: updatedUser._id,
-            name: updatedUser.name,
-            email: updatedUser.email,
-            phone: updatedUser.phone,
-            role: updatedUser.role,
-            businessName: updatedUser.businessName,
-            addresses: updatedUser.addresses,
-            token: generateToken(updatedUser._id),
-        });
-    } else {
-        res.status(404).json({ message: 'User not found' });
+    } catch (error) {
+        console.error('Error in updateUserProfile:', error);
+        res.status(400).json({ message: error.message || 'Invalid user data' });
     }
 };
 
@@ -511,7 +584,7 @@ const getFeaturedChefs = async (req, res) => {
     try {
         const { lat, lng } = req.query;
         
-        if (!lat || !lng) {
+        if (!lat || !lng || lat === 'undefined' || lng === 'undefined' || isNaN(parseFloat(lat)) || isNaN(parseFloat(lng))) {
             // Require location before showing nearby chefs
             return res.json([]); 
         }
@@ -521,15 +594,16 @@ const getFeaturedChefs = async (req, res) => {
                 $geoNear: {
                     near: { type: "Point", coordinates: [parseFloat(lng), parseFloat(lat)] },
                     distanceField: "distance",
+                    key: "kitchenLocation",
                     spherical: true,
-                    query: { role: 'chef', status: 'active' },
+                    query: { role: 'chef', status: 'active', isOpen: true },
                     distanceMultiplier: 0.001 // Convert meters to km
                 }
             },
             {
                 $match: {
                     $expr: {
-                        $lte: ["$distance", "$deliveryRadius"]
+                        $lte: ["$distance", { $ifNull: ["$deliveryRadius", 6] }]
                     }
                 }
             },
@@ -556,24 +630,33 @@ const getAllChefs = async (req, res) => {
     try {
         const { lat, lng } = req.query;
         
-        if (!lat || !lng) {
-            // If no location provided, return paginated active chefs
-            const { APIFeatures, sendPaginatedResponse } = require('../utils/apiFeatures');
-            const features = new APIFeatures(
-                User.find({ role: 'chef', status: 'active' }).select('-password'),
-                req.query
-            )
-                .filter()
-                .sort()
-                .limitFields()
-                .paginate();
+        if (!lat || !lng || lat === 'undefined' || lng === 'undefined' || isNaN(parseFloat(lat)) || isNaN(parseFloat(lng))) {
+            // If no valid location provided, return active open chefs without geo filtering
+            try {
+                const { APIFeatures, sendPaginatedResponse } = require('../utils/apiFeatures');
+                const features = new APIFeatures(
+                    User.find({ role: 'chef', status: 'active', isOpen: true }).select('-password'),
+                    req.query
+                )
+                    .filter()
+                    .sort()
+                    .limitFields()
+                    .paginate();
 
-            // Default sorting for chefs is by pinned and rating if not specified in query
-            if (!req.query.sort) {
-                features.query = features.query.sort({ isPinned: -1, rating: -1 });
+                // Default sorting for chefs is by pinned and rating if not specified in query
+                if (!req.query.sort) {
+                    features.query = features.query.sort({ isPinned: -1, rating: -1 });
+                }
+
+                return await sendPaginatedResponse(res, features, User); 
+            } catch (paginationError) {
+                // Fallback: simple query if pagination utility fails
+                const chefs = await User.find({ role: 'chef', status: 'active', isOpen: true })
+                    .select('-password')
+                    .sort({ isPinned: -1, rating: -1 })
+                    .limit(50);
+                return res.json(chefs);
             }
-
-            return await sendPaginatedResponse(res, features, User); 
         }
 
         const chefs = await User.aggregate([
@@ -581,15 +664,16 @@ const getAllChefs = async (req, res) => {
                 $geoNear: {
                     near: { type: "Point", coordinates: [parseFloat(lng), parseFloat(lat)] },
                     distanceField: "distance",
+                    key: "kitchenLocation",
                     spherical: true,
-                    query: { role: 'chef', status: 'active' },
+                    query: { role: 'chef', status: 'active', isOpen: true },
                     distanceMultiplier: 0.001 // Convert meters to km
                 }
             },
             {
                 $match: {
                     $expr: {
-                        $lte: ["$distance", "$deliveryRadius"]
+                        $lte: ["$distance", { $ifNull: ["$deliveryRadius", 6] }]
                     }
                 }
             },

@@ -2,10 +2,12 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Search, GripVertical, Image as ImageIcon, PlusCircle, Edit3, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthContext } from '../../context/AuthContext';
+import { SuperadminSocketContext } from '../../context/SuperadminSocketContext';
 import { API_URL } from '../../config';
 
 const SuperadminCategories = () => {
     const { user } = useContext(AuthContext);
+    const { lastUpdated } = useContext(SuperadminSocketContext);
     const [search, setSearch] = useState('');
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -80,7 +82,7 @@ const SuperadminCategories = () => {
             {/* Table */}
             <div className="sa-card" style={{ padding: '24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-main)' }}>All Categories</h3>
+                    <h3 className="sa-modal-title">All Categories</h3>
                     <div style={{ position: 'relative' }}>
                         <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                         <input className="sa-search" style={{ paddingLeft: '32px', width: '250px' }} placeholder="Search categories..." value={search} onChange={e => setSearch(e.target.value)} />
@@ -138,23 +140,23 @@ const SuperadminCategories = () => {
 
             {/* Create / Edit Modal */}
             {isModalOpen && (
-                <div className="modal-overlay">
-                    <div className="sa-card" style={{ width: '100%', maxWidth: '400px', padding: '24px', position: 'relative' }}>
-                        <X size={20} style={{ position: 'absolute', top: '16px', right: '16px', cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => setIsModalOpen(false)} />
-                        <h3 style={{ margin: '0 0 20px 0' }}>{editingCategory ? 'Edit Category' : 'Add Category'}</h3>
+                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
+                    <div className="sa-modal-card">
+                        <X size={20} className="sa-modal-close" onClick={() => setIsModalOpen(false)} />
+                        <h3 className="sa-modal-title">{editingCategory ? 'Edit Category' : 'Add Category'}</h3>
 
                         <form onSubmit={handleCreateOrUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>Category Name</label>
+                                <label className="sa-form-label">Category Name</label>
                                 <input type="text" className="form-control" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required placeholder="e.g. North Indian" />
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>Icon (Emoji)</label>
+                                    <label className="sa-form-label">Icon (Emoji)</label>
                                     <input type="text" className="form-control" value={formData.icon} onChange={e => setFormData({ ...formData, icon: e.target.value })} required />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>Sort Order</label>
+                                    <label className="sa-form-label">Sort Order</label>
                                     <input type="number" className="form-control" value={formData.displayOrder} onChange={e => setFormData({ ...formData, displayOrder: parseInt(e.target.value) })} required />
                                 </div>
                             </div>

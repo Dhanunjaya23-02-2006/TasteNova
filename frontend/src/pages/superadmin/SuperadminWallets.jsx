@@ -71,7 +71,7 @@ const SuperadminWallets = () => {
 
             {/* Transactions Table */}
             <div className="sa-card" style={{ padding: '24px' }}>
-                <h3 style={{ margin: '0 0 16px 0', fontSize: '1.1rem', color: 'var(--text-main)' }}>Recent Transactions</h3>
+                <h3 className="sa-modal-title">Recent Transactions</h3>
                 <div className="sa-table-wrap">
                     <table className="sa-table">
                         <thead>

@@ -2,10 +2,12 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Search, ShieldAlert, CheckCircle, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthContext } from '../../context/AuthContext';
+import { SuperadminSocketContext } from '../../context/SuperadminSocketContext';
 import { API_URL } from '../../config';
 
 const SuperadminRefunds = () => {
     const { user } = useContext(AuthContext);
+    const { lastUpdated } = useContext(SuperadminSocketContext);
     const [activeTab, setActiveTab] = useState('Pending');
     const [search, setSearch] = useState('');
     const [refunds, setRefunds] = useState([]);
@@ -19,7 +21,7 @@ const SuperadminRefunds = () => {
 
     useEffect(() => {
         if(user) fetchRefunds();
-    }, [user]);
+    }, [user, lastUpdated]);
 
     const handleAction = async (id, status) => {
         try {

@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { API_URL } from '../../config';
-import { Wallet, Plus, ArrowUpRight, ArrowDownLeft, Gift, ShieldCheck } from 'lucide-react';
+import { Wallet, Plus, ArrowUpRight, ArrowDownLeft, ShieldCheck, IndianRupee, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const WalletTab = () => {
@@ -13,74 +13,181 @@ const WalletTab = () => {
     const [topUpAmount, setTopUpAmount] = useState(500);
     const [isProcessing, setIsProcessing] = useState(false);
 
-    useEffect(() => {
-        const fetchWallet = async () => {
-            setLoading(true);
-            try {
-                const res = await fetch(`${API_URL}/users/wallet`, { headers: { Authorization: `Bearer ${user.token}` } });
-                if (res.ok) {
-                    const data = await res.json();
-                    setBalance(data.balance);
-                    setTransactions(data.transactions.map(txn => ({
-                        id: txn._id,
-                        type: txn.type,
-                        amount: txn.amount,
-                        desc: txn.desc,
-                        date: txn.createdAt,
-                        icon: txn.type === 'credit' ? ArrowDownLeft : ArrowUpRight,
-                        color: txn.type === 'credit' ? '#2ed573' : '#ff4757'
-                    })));
-                } else {
-                    toast.error('Failed to load wallet data');
-                }
-            } catch (error) {
-                console.error("Error fetching wallet", error);
-                toast.error('Error fetching wallet');
-            } finally {
-                setLoading(false);
-            }
-        };
+    const getAuthToken = () => user?.token || user?.accessToken || '';
 
-        if (user) fetchWallet();
+    const fetchWallet = useCallback(async () => {
+        setLoading(true);
+        try {
+            const res = await fetch(`${API_URL}/earnings/wallet`, { 
+                headers: { Authorization: `Bearer ${getAuthToken()}` } 
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setBalance(data.balance || 0);
+                const txnList = data.transactions || [];
+                setTransactions(txnList.map(txn => ({
+                    id: txn._id,
+                    type: txn.type,
+                    amount: txn.amount,
+                    desc: txn.desc || txn.description || 'Transaction',
+                    date: txn.createdAt,
+                    icon: txn.type === 'credit' ? ArrowDownLeft : ArrowUpRight,
+                    color: txn.type === 'credit' ? '#2ed573' : '#ff4757'
+                })));
+            } else {
+                toast.error('Failed to load wallet data');
+            }
+        } catch (error) {
+            console.error("Error fetching wallet", error);
+            toast.error('Error fetching wallet');
+        } finally {
+            setLoading(false);
+        }
     }, [user]);
 
+    useEffect(() => {
+        if (user) fetchWallet();
+    }, [user, fetchWallet]);
+
+    // Load Razorpay script dynamically
+    const loadRazorpayScript = () => {
+        return new Promise((resolve) => {
+            if (document.getElementById('razorpay-script')) {
+                resolve(true);
+                return;
+            }
+            const script = document.createElement('script');
+            script.id = 'razorpay-script';
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+            document.body.appendChild(script);
+        });
+    };
+
     const handleTopUp = async () => {
+        if (!topUpAmount || topUpAmount < 1) {
+            toast.error('Please enter a valid amount');
+            return;
+        }
+
         setIsProcessing(true);
+
         try {
-            const res = await fetch(`${API_URL}/users/wallet/topup`, {
+            // Step 1: Load Razorpay checkout script
+            const scriptLoaded = await loadRazorpayScript();
+            if (!scriptLoaded) {
+                toast.error('Failed to load payment gateway. Check your internet connection.');
+                setIsProcessing(false);
+                return;
+            }
+
+            // Step 2: Create Razorpay order on backend
+            const orderRes = await fetch(`${API_URL}/earnings/wallet/topup/create-order`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${user.token}` 
+                    Authorization: `Bearer ${getAuthToken()}` 
                 },
-                body: JSON.stringify({ amount: topUpAmount })
+                body: JSON.stringify({ amount: Number(topUpAmount) })
             });
 
-            if (res.ok) {
-                const data = await res.json();
-                setBalance(data.balance);
-                const txn = data.transaction;
-                setTransactions(prev => [
-                    { 
-                        id: txn._id, 
-                        type: txn.type, 
-                        amount: txn.amount, 
-                        desc: txn.desc, 
-                        date: txn.createdAt, 
-                        icon: ArrowDownLeft, 
-                        color: '#2ed573' 
-                    },
-                    ...prev
-                ]);
-                setShowTopUp(false);
-                toast.success(`₹${topUpAmount} added to your TasteNova Cash!`);
-            } else {
-                toast.error('Failed to process top-up');
+            if (!orderRes.ok) {
+                const errData = await orderRes.json();
+                toast.error(errData.message || 'Failed to create payment order');
+                setIsProcessing(false);
+                return;
             }
+
+            const orderData = await orderRes.json();
+
+            // Step 3: Open Razorpay checkout
+            const options = {
+                key: orderData.key,
+                amount: orderData.amount,
+                currency: orderData.currency,
+                name: 'TasteNova',
+                description: `Wallet Top-Up ₹${topUpAmount}`,
+                order_id: orderData.orderId,
+                handler: async (response) => {
+                    // Step 4: Verify payment on backend
+                    try {
+                        const verifyRes = await fetch(`${API_URL}/earnings/wallet/topup/verify`, {
+                            method: 'POST',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${getAuthToken()}` 
+                            },
+                            body: JSON.stringify({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                amount: Number(topUpAmount)
+                            })
+                        });
+
+                        const verifyData = await verifyRes.json();
+
+                        if (verifyRes.ok) {
+                            setBalance(verifyData.balance || 0);
+                            
+                            // Add the new transaction to the list
+                            const txn = verifyData.transaction;
+                            if (txn) {
+                                setTransactions(prev => [
+                                    {
+                                        id: txn._id,
+                                        type: 'credit',
+                                        amount: txn.amount,
+                                        desc: txn.desc || 'Wallet Top-Up via Razorpay',
+                                        date: txn.createdAt,
+                                        icon: ArrowDownLeft,
+                                        color: '#2ed573'
+                                    },
+                                    ...prev
+                                ]);
+                            }
+
+                            setShowTopUp(false);
+                            toast.success(`₹${topUpAmount} added to your TasteNova Cash!`);
+                        } else {
+                            toast.error(verifyData.message || 'Payment verification failed');
+                            // Refetch wallet to get actual state
+                            fetchWallet();
+                        }
+                    } catch (verifyError) {
+                        console.error('Verification error:', verifyError);
+                        toast.error('Payment verification failed. Contact support if amount was deducted.');
+                        fetchWallet();
+                    }
+                    setIsProcessing(false);
+                },
+                prefill: {
+                    name: user?.name || '',
+                    email: user?.email || '',
+                    contact: user?.phone || ''
+                },
+                theme: {
+                    color: '#176B45'
+                },
+                modal: {
+                    ondismiss: () => {
+                        setIsProcessing(false);
+                        toast('Payment cancelled', { icon: '❌' });
+                    }
+                }
+            };
+
+            const razorpay = new window.Razorpay(options);
+            razorpay.on('payment.failed', (response) => {
+                setIsProcessing(false);
+                toast.error(`Payment failed: ${response.error.description}`);
+            });
+            razorpay.open();
+
         } catch (error) {
             console.error('Top-up error', error);
             toast.error('An error occurred during top-up');
-        } finally {
             setIsProcessing(false);
         }
     };
@@ -97,6 +204,13 @@ const WalletTab = () => {
                     <h2 style={{ fontSize: '1.5rem', color: 'var(--text-main)', fontWeight: 800, marginBottom: '4px' }}>TasteNova Cash</h2>
                     <p style={{ color: 'var(--text-muted)' }}>Manage your wallet balance and view transaction history.</p>
                 </div>
+                <button 
+                    onClick={fetchWallet} 
+                    className="btn btn-outline" 
+                    style={{ padding: '8px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}
+                >
+                    <RefreshCw size={14} /> Refresh
+                </button>
             </div>
 
             {/* Wallet Balance Card */}
@@ -108,7 +222,7 @@ const WalletTab = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
                     <div>
                         <p style={{ fontSize: '1rem', opacity: 0.9, marginBottom: '4px' }}>Available Balance</p>
-                        <h1 style={{ fontSize: '3rem', fontWeight: 800, letterSpacing: '-1px' }}>₹{balance.toFixed(2)}</h1>
+                        <h1 style={{ fontSize: '3rem', fontWeight: 800, letterSpacing: '-1px' }}>₹{Number(balance).toFixed(2)}</h1>
                     </div>
                     
                     <button onClick={() => setShowTopUp(true)} className="btn btn-outline" style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', color: '#fff', padding: '12px 24px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem' }}>
@@ -140,19 +254,28 @@ const WalletTab = () => {
                             type="number" 
                             value={topUpAmount}
                             onChange={(e) => setTopUpAmount(e.target.value)}
+                            min="1"
                             style={{ width: '100%', padding: '16px 16px 16px 40px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--bg-surface)', color: 'var(--text-main)', fontSize: '1.2rem', fontWeight: 600, outline: 'none' }}
                         />
                     </div>
                     
                     <div style={{ display: 'flex', gap: '12px' }}>
                         <button onClick={() => setShowTopUp(false)} className="btn btn-outline" style={{ flex: 1, padding: '14px', borderRadius: '12px' }}>Cancel</button>
-                        <button onClick={handleTopUp} disabled={isProcessing || topUpAmount < 10} className="btn btn-primary" style={{ flex: 2, padding: '14px', borderRadius: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
-                            {isProcessing ? 'Processing...' : `Pay ₹${topUpAmount}`}
+                        <button onClick={handleTopUp} disabled={isProcessing || topUpAmount < 1} className="btn btn-primary" style={{ flex: 2, padding: '14px', borderRadius: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                            {isProcessing ? (
+                                <>
+                                    <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> Processing...
+                                </>
+                            ) : (
+                                <>
+                                    <IndianRupee size={16} /> Pay ₹{topUpAmount}
+                                </>
+                            )}
                         </button>
                     </div>
                     
                     <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}>
-                        <ShieldCheck size={14} /> Secure Payment Gateway Integration (Mocked)
+                        <ShieldCheck size={14} /> Secured by Razorpay Payment Gateway
                     </div>
                 </div>
             )}
@@ -177,7 +300,7 @@ const WalletTab = () => {
                                     </div>
                                 </div>
                                 <div style={{ fontWeight: 700, fontSize: '1.1rem', color: txn.type === 'credit' ? '#2ed573' : 'var(--text-main)' }}>
-                                    {txn.type === 'credit' ? '+' : '-'}₹{txn.amount.toFixed(2)}
+                                    {txn.type === 'credit' ? '+' : '-'}₹{Number(txn.amount).toFixed(2)}
                                 </div>
                             </div>
                         ))

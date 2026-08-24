@@ -3,10 +3,12 @@ import { Activity, Server, Database, Globe, AlertTriangle, CheckCircle } from 'l
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { AuthContext } from '../../context/AuthContext';
+import { SuperadminSocketContext } from '../../context/SuperadminSocketContext';
 import { API_URL } from '../../config';
 
 const SuperadminSystemHealth = () => {
     const { user } = useContext(AuthContext);
+    const { lastUpdated } = useContext(SuperadminSocketContext);
     const [healthData, setHealthData] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -59,7 +61,7 @@ const SuperadminSystemHealth = () => {
                         <AlertTriangle size={24} />
                     </div>
                     <div>
-                        <h3 style={{ margin: '0 0 4px 0', fontSize: '1.1rem', color: '#b9770e' }}>Partial Degradation Detected</h3>
+                        <h3 className="sa-modal-title">Partial Degradation Detected</h3>
                         <p style={{ margin: 0, fontSize: '0.9rem', color: '#d68910' }}>One or more system components are experiencing issues.</p>
                     </div>
                 </div>
@@ -109,7 +111,7 @@ const SuperadminSystemHealth = () => {
 
             {/* System Logs Preview */}
             <div className="sa-card" style={{ padding: '24px', marginTop: '24px' }}>
-                <h3 style={{ margin: '0 0 16px 0', fontSize: '1.1rem', color: 'var(--text-main)' }}>Recent System Events</h3>
+                <h3 className="sa-modal-title">Recent System Events</h3>
                 <div style={{ background: '#1e1e24', borderRadius: '8px', padding: '16px', fontFamily: 'monospace', fontSize: '0.85rem', color: '#a9b7c6', display: 'flex', flexDirection: 'column', gap: '8px', height: '200px', overflowY: 'auto' }}>
                     {healthData?.logs.map((log, i) => (
                         <div key={i}>{log}</div>

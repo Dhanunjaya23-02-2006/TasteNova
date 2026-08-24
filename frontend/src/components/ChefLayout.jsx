@@ -54,10 +54,15 @@ const mobileBottomNav = [
     { to: '/chef/dashboard', label: 'Home', icon: HomeIcon },
     { to: '/chef/orders', label: 'Orders', icon: ShoppingBag },
     { to: '/chef/menu', label: 'Menu', icon: ChefHat },
-    { to: '/chef/earnings', label: 'Earnings', icon: Wallet },
+    { action: 'more', label: 'More', icon: Menu },
 ];
 
 const ChefLayout = () => {
+    // Add class to body to ensure padding for bottom nav on mobile
+    useEffect(() => {
+        document.body.classList.add('has-mobile-bottom-nav');
+        return () => document.body.classList.remove('has-mobile-bottom-nav');
+    }, []);
     const { user, logout } = useContext(AuthContext);
     const navigate = useNavigate();
     const location = useLocation();
@@ -69,15 +74,27 @@ const ChefLayout = () => {
     const [notifications, setNotifications] = useState([]);
     const [notifOpen, setNotifOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [kitchenOpen, setKitchenOpen] = useState(false);
 
     useEffect(() => {
         if (!user || (user.role !== 'chef' && user.role !== 'admin')) {
             navigate('/');
         } else {
             fetchStats();
+            fetchKitchenStatus();
         }
     }, [user, navigate]);
-    
+
+    const fetchKitchenStatus = async () => {
+        try {
+            const res = await fetch(`${API_URL}/users/profile`, { headers: { Authorization: `Bearer ${user?.token || user?.accessToken}` } });
+            if (res.ok) {
+                const data = await res.json();
+                setKitchenOpen(!!data.isOpen);
+            }
+        } catch (e) { console.error(e); }
+    };
+
     const fetchStats = async () => {
         try {
             const res = await fetch(`${API_URL}/orders/chef/stats`, { headers: { Authorization: `Bearer ${user?.token}` } });
@@ -109,10 +126,18 @@ const ChefLayout = () => {
         socket.on('new_notification', (notification) => {
             setNotifications(prev => [notification, ...prev]);
             setUnreadCount(prev => prev + 1);
-            // Optionally add toast here
         });
 
-        return () => socket.disconnect();
+        // Listen for kitchen status changes from the dashboard
+        const handleKitchenStatusChange = (e) => {
+            if (e.detail !== undefined) setKitchenOpen(!!e.detail);
+        };
+        window.addEventListener('kitchenStatusChanged', handleKitchenStatusChange);
+
+        return () => {
+            socket.disconnect();
+            window.removeEventListener('kitchenStatusChanged', handleKitchenStatusChange);
+        };
     }, [user]);
 
     useEffect(() => {
@@ -126,9 +151,9 @@ const ChefLayout = () => {
 
     const handleMarkAsRead = async (id) => {
         try {
-            await fetch(`${API_URL}/notifications/${id}/read`, { 
+            await fetch(`${API_URL}/notifications/${id}/read`, {
                 method: 'PUT',
-                headers: { Authorization: `Bearer ${user?.token}` } 
+                headers: { Authorization: `Bearer ${user?.token}` }
             });
             setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
             setUnreadCount(prev => Math.max(0, prev - 1));
@@ -137,9 +162,9 @@ const ChefLayout = () => {
 
     const handleMarkAllRead = async () => {
         try {
-            await fetch(`${API_URL}/notifications/read-all`, { 
+            await fetch(`${API_URL}/notifications/read-all`, {
                 method: 'PUT',
-                headers: { Authorization: `Bearer ${user?.token}` } 
+                headers: { Authorization: `Bearer ${user?.token}` }
             });
             setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
             setUnreadCount(0);
@@ -167,11 +192,11 @@ const ChefLayout = () => {
 
     return (
         <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#F8F9FA', overflow: 'hidden' }}>
-            
+
             {/* ─── FULL WIDTH TOP BAR ─── */}
-            <header style={{ 
-                height: '70px', 
-                background: '#fff', 
+            <header style={{
+                height: '70px',
+                background: '#fff',
                 borderBottom: '1px solid var(--border-subtle)',
                 display: 'flex',
                 alignItems: 'center',
@@ -180,28 +205,21 @@ const ChefLayout = () => {
                 zIndex: 20
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <button
-                        className="subadmin-hamburger"
-                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                        style={{ display: window.innerWidth > 900 ? 'none' : 'block', background: 'none', border: 'none', cursor: 'pointer' }}
-                    >
-                        {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-                    </button>
-
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800 }}>T</div>
-                        <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.4rem', color: 'var(--text-main)' }}>TasteNova</span>
+                        <span className="hide-on-mobile" style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.4rem', color: 'var(--text-main)' }}>TasteNova</span>
+                        <span className="show-on-mobile" style={{ display: 'none', fontFamily: "'DM Serif Display', serif", fontSize: '1.2rem', color: 'var(--text-main)' }}>My Kitchen</span>
                     </div>
 
-                    <div style={{ display: window.innerWidth > 600 ? 'flex' : 'none', alignItems: 'center', gap: '6px', background: 'rgba(39, 174, 96, 0.1)', color: '#27ae60', padding: '6px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600, marginLeft: '16px' }}>
-                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#27ae60', display: 'inline-block' }}></span>
-                        Kitchen Open
+                    <div style={{ display: window.innerWidth > 600 ? 'flex' : 'none', alignItems: 'center', gap: '6px', background: kitchenOpen ? 'rgba(39, 174, 96, 0.1)' : 'rgba(231, 76, 60, 0.1)', color: kitchenOpen ? '#27ae60' : '#e74c3c', padding: '6px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600, marginLeft: '16px' }}>
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: kitchenOpen ? '#27ae60' : '#e74c3c', display: 'inline-block' }}></span>
+                        {kitchenOpen ? 'Kitchen Open' : 'Kitchen Closed'}
                     </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                     <div ref={notifRef} style={{ position: 'relative' }}>
-                        <button 
+                        <button
                             onClick={() => setNotifOpen(!notifOpen)}
                             style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative', color: 'var(--text-main)' }}
                         >
@@ -212,7 +230,7 @@ const ChefLayout = () => {
                                 </span>
                             )}
                         </button>
-                        
+
                         {notifOpen && (
                             <div className="subadmin-dropdown-menu" style={{ right: '-60px', left: 'auto', width: '320px', top: '100%', marginTop: '16px', zIndex: 100, padding: 0, overflow: 'hidden' }}>
                                 <div style={{ padding: '16px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F8F9FA' }}>
@@ -267,7 +285,7 @@ const ChefLayout = () => {
 
             {/* ─── BODY (Sidebar + Main Content) ─── */}
             <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-                
+
                 {/* ─── SIDEBAR (Desktop) ─── */}
                 <aside className="chef-sidebar" style={{
                     width: '230px',
@@ -296,8 +314,8 @@ const ChefLayout = () => {
                             Home Chef • {user.city?.name || 'Hyderabad'}
                         </p>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: '0.8rem', fontWeight: 600 }}>
-                            <Star fill="#f39c12" color="#f39c12" size={12} /> 
-                            {stats?.rating || '4.8'} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({user.numReviews || 128} reviews)</span>
+                            <Star fill="#f39c12" color="#f39c12" size={12} />
+                            {stats?.rating ?? user.rating ?? 0} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({stats?.numReviews ?? user.numReviews ?? 0} reviews)</span>
                         </div>
                     </div>
 
@@ -358,44 +376,51 @@ const ChefLayout = () => {
             </div>
 
             {/* ─── MOBILE BOTTOM NAV ─── */}
-            <nav style={{
-                display: window.innerWidth > 900 ? 'none' : 'flex',
+            <nav className="show-on-mobile-flex" style={{
+                display: 'none',
                 position: 'fixed', bottom: 0, left: 0, right: 0,
                 background: '#fff',
                 borderTop: '1px solid var(--border-subtle)',
                 padding: '8px 0 env(safe-area-inset-bottom, 12px)',
                 zIndex: 1000,
-                boxShadow: '0 -4px 12px rgba(0,0,0,0.05)'
+                boxShadow: '0 -4px 12px rgba(0,0,0,0.05)',
+                justifyContent: 'space-around'
             }}>
                 {mobileBottomNav.map(item => (
-                    <NavLink 
-                        key={item.to} 
-                        to={item.to} 
-                        style={({ isActive }) => ({
-                            flex: 1,
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-                            textDecoration: 'none',
-                            fontSize: '0.75rem', fontWeight: 600,
-                            color: isActive ? 'var(--primary)' : 'var(--text-muted)',
-                            transition: 'color 0.2s'
-                        })}
-                    >
-                        <item.icon size={22} />
-                        {item.label}
-                    </NavLink>
+                    item.action === 'more' ? (
+                        <button
+                            key="more"
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            style={{
+                                flex: 1,
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+                                background: 'none', border: 'none',
+                                fontSize: '0.75rem', fontWeight: 600,
+                                color: mobileMenuOpen ? 'var(--primary)' : 'var(--text-muted)',
+                                transition: 'color 0.2s', cursor: 'pointer'
+                            }}
+                        >
+                            <item.icon size={22} />
+                            {item.label}
+                        </button>
+                    ) : (
+                        <NavLink
+                            key={item.to}
+                            to={item.to}
+                            style={({ isActive }) => ({
+                                flex: 1,
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+                                textDecoration: 'none',
+                                fontSize: '0.75rem', fontWeight: 600,
+                                color: isActive ? 'var(--primary)' : 'var(--text-muted)',
+                                transition: 'color 0.2s'
+                            })}
+                        >
+                            <item.icon size={22} />
+                            {item.label}
+                        </NavLink>
+                    )
                 ))}
-                <button 
-                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                    style={{
-                        flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-                        background: 'none', border: 'none', cursor: 'pointer',
-                        fontSize: '0.75rem', fontWeight: 600,
-                        color: mobileMenuOpen ? 'var(--primary)' : 'var(--text-muted)'
-                    }}
-                >
-                    <MoreHorizontal size={22} />
-                    More
-                </button>
             </nav>
         </div>
     );

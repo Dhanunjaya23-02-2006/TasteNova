@@ -453,6 +453,20 @@ select.form-control {
 }
 
 /* Modals */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
 .modal-content {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
@@ -486,8 +500,8 @@ select.form-control {
 
 /* Animations */
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(30px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; margin-top: 30px; }
+  to { opacity: 1; margin-top: 0; }
 }
 
 @keyframes pulse-glow {
@@ -1395,10 +1409,44 @@ select.form-control {
   to { opacity: 1; }
 }
 
-.modal-overlay > .sa-card, .modal-overlay > .modal-content {
+.modal-overlay > .sa-card, .modal-overlay > .modal-content, .sa-modal-card {
   margin: auto;
   flex-shrink: 0;
   animation: modalSlideUp 0.25s ease;
+}
+
+.sa-modal-card {
+  width: 100%;
+  max-width: 520px;
+  padding: 28px;
+  position: relative;
+  max-height: none;
+  overflow-y: visible;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.sa-modal-title {
+  margin: 0 0 24px 0;
+  font-family: 'DM Serif Display', serif;
+}
+
+.sa-form-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.sa-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  cursor: pointer;
+  color: var(--text-muted);
 }
 
 @keyframes modalSlideUp {
@@ -1431,5 +1479,193 @@ select.form-control {
   .sa-table th, .sa-table td {
     padding: 8px 10px;
     font-size: 0.8rem;
+  }
+}
+
+/* =========================================================================
+   TASTENOVA GLOBAL RESPONSIVE SYSTEM (MOBILE FIRST)
+   Target Breakpoints: 320px - 1920px+
+   ========================================================================= */
+
+/* UTILITY CLASSES */
+.hide-on-mobile {
+  display: none !important;
+}
+
+.show-on-mobile {
+  display: block !important;
+}
+
+.show-on-mobile-flex {
+  display: flex !important;
+}
+
+@media (min-width: 768px) {
+  .hide-on-desktop {
+    display: none !important;
+  }
+  .show-on-mobile {
+    display: none !important;
+  }
+  .show-on-mobile-flex {
+    display: none !important;
+  }
+  .hide-on-mobile {
+    display: block !important;
+  }
+  .hide-on-mobile-flex {
+    display: flex !important;
+  }
+}
+
+/* GLOBAL MOBILE OPTIMIZATIONS (Max width 767px) */
+@media (max-width: 767px) {
+  
+  /* 1. Prevent Horizontal Scroll at 320px */
+  html, body {
+    overflow-x: hidden;
+    width: 100%;
+  }
+
+  /* 2. Container Adjustments */
+  .container {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  /* 3. Typography Adjustments */
+  h1 { font-size: 1.8rem !important; }
+  h2 { font-size: 1.5rem !important; }
+  h3 { font-size: 1.25rem !important; }
+  
+  /* 4. Glass Panel (Cards) */
+  .glass-panel {
+    padding: 16px !important;
+    border-radius: 12px;
+  }
+  
+  /* 5. Mobile Data Cards (converting tables) */
+  .mobile-data-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow-card);
+  }
+  
+  .mobile-data-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  
+  .mobile-data-label {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+  
+  .mobile-data-value {
+    color: var(--text-main);
+    font-weight: 600;
+  }
+  
+  /* 6. Form Elements */
+  input, select, textarea, button {
+    font-size: 16px !important; /* Prevents iOS auto-zoom */
+  }
+  
+  /* 7. Bottom Navigation Padding */
+  /* Add padding to the bottom of the body when a mobile bottom nav is active */
+  body.has-mobile-bottom-nav {
+    padding-bottom: 80px;
+  }
+  
+  /* 8. Home Page Specific Adjustments */
+  .landing-hero {
+    padding: 30px 0 40px 0;
+  }
+  .hero-heading {
+    font-size: 2.2rem !important;
+  }
+  .hero-subtext {
+    font-size: 1rem !important;
+  }
+  .hero-image-wrapper {
+    height: 300px !important;
+    margin-top: 20px;
+  }
+  .floating-card {
+    padding: 8px 12px;
+  }
+  .floating-card img {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  .floating-card p {
+    font-size: 0.75rem !important;
+  }
+  
+  .steps-container {
+    flex-direction: column;
+    gap: 30px;
+  }
+  .step-line {
+    display: none;
+  }
+  .step-item {
+    align-items: flex-start;
+    text-align: left;
+    flex-direction: row;
+    gap: 16px;
+  }
+  .step-number {
+    position: relative;
+    top: 0;
+    right: 0;
+    transform: none;
+  }
+
+  /* 9. Responsive Table to Cards */
+  .responsive-table, .responsive-table thead, .responsive-table tbody, .responsive-table th, .responsive-table td, .responsive-table tr {
+    display: block;
+  }
+  .responsive-table thead tr {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+  .responsive-table tr {
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: #fff;
+  }
+  .responsive-table td {
+    border: none !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+    position: relative;
+    padding-left: 50% !important;
+    text-align: right !important;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+  .responsive-table td:last-child {
+    border-bottom: 0 !important;
+  }
+  .responsive-table td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 12px;
+    width: 45%;
+    padding-right: 10px;
+    white-space: nowrap;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-muted);
+    font-size: 0.85rem;
   }
 }

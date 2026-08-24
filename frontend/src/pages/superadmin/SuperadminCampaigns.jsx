@@ -2,10 +2,12 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Send, Smartphone, Mail, Activity, Search, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthContext } from '../../context/AuthContext';
+import { SuperadminSocketContext } from '../../context/SuperadminSocketContext';
 import { API_URL } from '../../config';
 
 const SuperadminCampaigns = () => {
     const { user } = useContext(AuthContext);
+    const { lastUpdated } = useContext(SuperadminSocketContext);
     const [search, setSearch] = useState('');
     const [campaigns, setCampaigns] = useState([]);
     
@@ -22,7 +24,7 @@ const SuperadminCampaigns = () => {
         } catch(e) { console.error(e); }
     };
 
-    useEffect(() => { if(user) fetchCampaigns(); }, [user]);
+    useEffect(() => { if(user) fetchCampaigns(); }, [user, lastUpdated]);
 
     const openModal = (campaign) => {
         setEditingCampaign(campaign);
@@ -98,7 +100,7 @@ const SuperadminCampaigns = () => {
             {/* Table */}
             <div className="sa-card" style={{ padding: '24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-main)' }}>Recent Campaigns</h3>
+                    <h3 className="sa-modal-title">Recent Campaigns</h3>
                     <div style={{ position: 'relative' }}>
                         <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                         <input className="sa-search" style={{ paddingLeft: '32px', width: '250px' }} placeholder="Search campaigns..." value={search} onChange={e => setSearch(e.target.value)} />
@@ -139,10 +141,10 @@ const SuperadminCampaigns = () => {
             </div>
 
             {isModalOpen && editingCampaign && (
-                <div className="modal-overlay">
-                    <div className="sa-card" style={{ width: '100%', maxWidth: '400px', padding: '24px', position: 'relative' }}>
-                        <X size={20} style={{ position: 'absolute', top: '16px', right: '16px', cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => setIsModalOpen(false)} />
-                        <h3 style={{ margin: '0 0 20px 0' }}>Review Campaign Request</h3>
+                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
+                    <div className="sa-modal-card">
+                        <X size={20} className="sa-modal-close" onClick={() => setIsModalOpen(false)} />
+                        <h3 className="sa-modal-title">Review Campaign Request</h3>
                         
                         <div style={{ marginBottom: '16px' }}>
                             <p style={{ margin: '0 0 4px 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Chef</p>
@@ -159,7 +161,7 @@ const SuperadminCampaigns = () => {
                         
                         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '20px', borderTop: '1px solid var(--border-subtle)', paddingTop: '16px' }}>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>Status</label>
+                                <label className="sa-form-label">Status</label>
                                 <select className="form-control" value={status} onChange={e => setStatus(e.target.value)}>
                                     <option value="Pending">Pending</option>
                                     <option value="Active">Active / Approved</option>
@@ -168,7 +170,7 @@ const SuperadminCampaigns = () => {
                                 </select>
                             </div>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, fontSize: '0.9rem' }}>Admin Feedback (Optional)</label>
+                                <label className="sa-form-label">Admin Feedback (Optional)</label>
                                 <textarea className="form-control" value={feedback} onChange={e => setFeedback(e.target.value)} placeholder="Reason for rejection or instructions..." rows="3" />
                             </div>
                             

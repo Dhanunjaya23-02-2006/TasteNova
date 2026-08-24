@@ -55,7 +55,7 @@ const ChefsList = () => {
 
     return (
         <main className="container mt-4 mb-5 animate-fade-up" style={{ minHeight: '60vh' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '20px', marginBottom: '30px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: '20px', marginBottom: '30px', flexDirection: window.innerWidth <= 768 ? 'column' : 'row' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div style={{ background: 'rgba(23, 107, 69, 0.1)', padding: '12px', borderRadius: '12px', color: 'var(--primary)' }}>
                         <ChefHat size={28} />
@@ -66,7 +66,7 @@ const ChefsList = () => {
                     </div>
                 </div>
 
-                <div style={{ position: 'relative', flex: '1 1 300px', maxWidth: '400px' }}>
+                <div style={{ position: 'relative', width: '100%', flex: window.innerWidth <= 768 ? 'none' : '1 1 300px', maxWidth: window.innerWidth <= 768 ? '100%' : '400px' }}>
                     <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                     <input 
                         type="text" 

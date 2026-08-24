@@ -15,6 +15,19 @@ const ChefProfilePage = () => {
         phone: user?.phone || '',
         profilePic: user?.profilePic || '',
     });
+
+    useEffect(() => {
+        if (user) {
+            setForm({
+                name: user.name || '',
+                businessName: user.businessName || '',
+                description: user.description || '',
+                phone: user.phone || '',
+                profilePic: user.profilePic || '',
+            });
+        }
+    }, [user]);
+
     const [reviews, setReviews] = useState([]);
 
     useEffect(() => {
@@ -64,7 +77,6 @@ const ChefProfilePage = () => {
             if (res.ok) {
                 const updated = await res.json();
                 login(updated);
-                localStorage.setItem('user', JSON.stringify(updated));
                 toast.success('Profile updated!');
                 setEditing(false);
             }

@@ -24,6 +24,10 @@ const walletTransactionSchema = new mongoose.Schema({
         enum: ['pending', 'completed', 'reversed', 'failed'],
         default: 'pending'
     },
+    description: {
+        type: String,
+        default: ''
+    },
     idempotency_key: {
         type: String,
         sparse: true,

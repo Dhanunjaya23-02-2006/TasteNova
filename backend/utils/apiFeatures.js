@@ -51,8 +51,9 @@ class APIFeatures {
 // Utility function to apply headers safely without modifying JSON shape
 const sendPaginatedResponse = async (res, apiFeaturesObj, Model) => {
     // Count total documents ignoring skip and limit
-    // We clone the mongoose query safely
-    const countQuery = Model.find(apiFeaturesObj.query.getQuery());
+    // Use getFilter() (Mongoose 6+) with fallback to getQuery() for backward compat
+    const filterConditions = apiFeaturesObj.query.getFilter ? apiFeaturesObj.query.getFilter() : apiFeaturesObj.query.getQuery();
+    const countQuery = Model.find(filterConditions);
     const totalCount = await countQuery.countDocuments();
     
     const docs = await apiFeaturesObj.query;

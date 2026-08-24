@@ -2,10 +2,12 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Star, Search, Crown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthContext } from '../../context/AuthContext';
+import { SuperadminSocketContext } from '../../context/SuperadminSocketContext';
 import { API_URL } from '../../config';
 
 const SuperadminFeatured = () => {
     const { user } = useContext(AuthContext);
+    const { lastUpdated } = useContext(SuperadminSocketContext);
     const [search, setSearch] = useState('');
     const [chefs, setChefs] = useState([]);
 
@@ -16,7 +18,7 @@ const SuperadminFeatured = () => {
         } catch(e) { console.error(e); }
     };
 
-    useEffect(() => { if(user) fetchChefs(); }, [user]);
+    useEffect(() => { if(user) fetchChefs(); }, [user, lastUpdated]);
 
     const handleTogglePin = async (id, isPinned) => {
         try {
@@ -65,7 +67,7 @@ const SuperadminFeatured = () => {
             {/* Table */}
             <div className="sa-card" style={{ padding: '24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-main)' }}>Featured List</h3>
+                    <h3 className="sa-modal-title">Featured List</h3>
                     <div style={{ position: 'relative' }}>
                         <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                         <input className="sa-search" style={{ paddingLeft: '32px', width: '250px' }} placeholder="Search chef name..." value={search} onChange={e => setSearch(e.target.value)} />

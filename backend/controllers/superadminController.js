@@ -121,6 +121,7 @@ const createCity = async (req, res) => {
         const city = new City(req.body);
         await city.save();
         await logAction(req.user._id, 'CREATE_CITY', 'City', city._id, city._id, `Created city ${city.name}`);
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.status(201).json(city);
     } catch (error) {
         res.status(400).json({ message: 'Error creating city', error: error.message });
@@ -132,6 +133,7 @@ const updateCity = async (req, res) => {
         const city = await City.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!city) return res.status(404).json({ message: 'City not found' });
         await logAction(req.user._id, 'UPDATE_CITY', 'City', city._id, city._id, `Updated city ${city.name}`);
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.json(city);
     } catch (error) {
         res.status(400).json({ message: 'Error updating city', error: error.message });
@@ -164,6 +166,7 @@ const updateSubAdmin = async (req, res) => {
         
         await subAdmin.save();
         await logAction(req.user._id, 'UPDATE_SUBADMIN', 'User', subAdmin._id, null, `Updated subadmin ${subAdmin.name}`);
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.json(subAdmin);
     } catch (error) {
         res.status(400).json({ message: 'Error updating subadmin', error: error.message });
@@ -193,6 +196,7 @@ const createSubAdmin = async (req, res) => {
         
         await newAdmin.save();
         
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.status(201).json(newAdmin);
     } catch (error) {
         res.status(400).json({ message: 'Error creating subadmin', error: error.message });
@@ -221,6 +225,7 @@ const verifyUser = async (req, res) => {
         user.status = status;
         await user.save();
         await logAction(req.user._id, 'VERIFY_USER', 'User', user._id, user.city, `Set ${user.role} ${user.name} to ${status}. Note: ${note || 'None'}`);
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.json(user);
     } catch (error) {
         res.status(400).json({ message: 'Error verifying user', error: error.message });
@@ -247,10 +252,13 @@ const getAuditLogs = async (req, res) => {
 // ========================
 const getOrders = async (req, res) => {
     try {
-        const { page = 1, limit = 20, city, status } = req.query;
+        const { page = 1, limit = 20, city, status, search } = req.query;
         const filter = {};
         if (city && city !== 'All') filter.city = city;
         if (status && status !== 'All') filter.status = status;
+        if (search && mongoose.Types.ObjectId.isValid(search)) {
+            filter._id = search;
+        }
 
         const orders = await Order.find(filter)
             .populate('user', 'name phone email')
@@ -270,10 +278,18 @@ const getOrders = async (req, res) => {
 
 const getChefs = async (req, res) => {
     try {
-        const { page = 1, limit = 20, city, status } = req.query;
+        const { page = 1, limit = 20, city, status, search } = req.query;
         const filter = { role: 'chef' };
         if (city && city !== 'All') filter.city = city;
         if (status && status !== 'All') filter.status = status;
+        if (search) {
+            filter.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } },
+                { phone: { $regex: search, $options: 'i' } },
+                { kitchenName: { $regex: search, $options: 'i' } }
+            ];
+        }
 
         const chefs = await User.find(filter)
             .select('-password -refreshTokens')
@@ -291,10 +307,17 @@ const getChefs = async (req, res) => {
 
 const getDelivery = async (req, res) => {
     try {
-        const { page = 1, limit = 20, city, status } = req.query;
+        const { page = 1, limit = 20, city, status, search } = req.query;
         const filter = { role: 'delivery' };
         if (city && city !== 'All') filter.city = city;
         if (status && status !== 'All') filter.status = status;
+        if (search) {
+            filter.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } },
+                { phone: { $regex: search, $options: 'i' } }
+            ];
+        }
 
         const partners = await User.find(filter)
             .select('-password -refreshTokens')
@@ -437,6 +460,7 @@ const updateCustomerStatus = async (req, res) => {
         customer.status = status;
         await customer.save();
         await logAction(req.user._id, 'UPDATE_CUSTOMER_STATUS', 'User', customer._id, customer.city, `Set customer ${customer.name} to ${status}`);
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
 
         res.json({ message: `Customer ${status === 'active' ? 'activated' : 'suspended'}`, customer });
     } catch (error) {
@@ -446,10 +470,13 @@ const updateCustomerStatus = async (req, res) => {
 
 const getSupportTickets = async (req, res) => {
     try {
-        const { page = 1, limit = 20, status, city } = req.query;
+        const { page = 1, limit = 20, status, city, search } = req.query;
         const filter = {};
         if (status && status !== 'All') filter.status = status;
         if (city && city !== 'All') filter.city = city;
+        if (search) {
+            filter.subject = { $regex: search, $options: 'i' };
+        }
 
         const tickets = await SupportTicket.find(filter)
             .populate('customer', 'name email phone')
@@ -529,6 +556,7 @@ const updateGlobalCommission = async (req, res) => {
         const { rate } = req.body;
         const GlobalSetting = require('../models/GlobalSetting');
         await GlobalSetting.findOneAndUpdate({ key: 'global_commission_rate' }, { value: rate }, { upsert: true });
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.json({ message: 'Global commission updated', rate });
     } catch (error) {
         res.status(500).json({ message: 'Error updating global commission', error: error.message });
@@ -543,6 +571,7 @@ const updateChefCommission = async (req, res) => {
         
         chef.commissionRate = rate;
         await chef.save();
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.json(chef);
     } catch (error) {
         res.status(500).json({ message: 'Error updating chef commission', error: error.message });
@@ -563,6 +592,7 @@ const processBatchPayout = async (req, res) => {
     try {
         const Payout = require('../models/Payout');
         await Payout.updateMany({ status: 'Requested' }, { status: 'Processing' });
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.json({ message: 'Batch payout initiated' });
     } catch (error) {
         res.status(500).json({ message: 'Error processing payouts', error: error.message });
@@ -586,6 +616,7 @@ const updateRefundStatus = async (req, res) => {
         
         order.refundStatus = status;
         await order.save();
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.json(order);
     } catch (error) {
         res.status(500).json({ message: 'Error updating refund', error: error.message });
@@ -607,6 +638,7 @@ const createTax = async (req, res) => {
         const TaxRule = require('../models/TaxRule');
         const tax = new TaxRule(req.body);
         await tax.save();
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.json(tax);
     } catch (error) {
         res.status(500).json({ message: 'Error creating tax', error: error.message });
@@ -617,6 +649,7 @@ const updateTax = async (req, res) => {
     try {
         const TaxRule = require('../models/TaxRule');
         const tax = await TaxRule.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.json(tax);
     } catch (error) {
         res.status(500).json({ message: 'Error updating tax', error: error.message });
@@ -692,6 +725,7 @@ const createBanner = async (req, res) => {
         const Banner = require('../models/Banner');
         const banner = new Banner(req.body);
         await banner.save();
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.status(201).json(banner);
     } catch (error) {
         res.status(400).json({ message: 'Error creating banner', error: error.message });
@@ -703,6 +737,7 @@ const updateBanner = async (req, res) => {
         const Banner = require('../models/Banner');
         const banner = await Banner.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!banner) return res.status(404).json({ message: 'Banner not found' });
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.json(banner);
     } catch (error) {
         res.status(400).json({ message: 'Error updating banner', error: error.message });
@@ -714,6 +749,7 @@ const deleteBanner = async (req, res) => {
         const Banner = require('../models/Banner');
         const banner = await Banner.findByIdAndDelete(req.params.id);
         if (!banner) return res.status(404).json({ message: 'Banner not found' });
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.json({ message: 'Banner deleted' });
     } catch (error) {
         res.status(500).json({ message: 'Error deleting banner', error: error.message });
@@ -735,6 +771,7 @@ const updateCampaign = async (req, res) => {
         const MarketingCampaign = require('../models/MarketingCampaign');
         const campaign = await MarketingCampaign.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!campaign) return res.status(404).json({ message: 'Campaign not found' });
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.json(campaign);
     } catch (error) {
         res.status(400).json({ message: 'Error updating campaign', error: error.message });
@@ -757,6 +794,7 @@ const toggleFeaturedChef = async (req, res) => {
         
         chef.isPinned = !chef.isPinned;
         await chef.save();
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.json(chef);
     } catch (error) {
         res.status(400).json({ message: 'Error toggling featured chef', error: error.message });
@@ -806,6 +844,7 @@ const createRole = async (req, res) => {
         const { name, description, permissions } = req.body;
         const role = new Role({ name, description, permissions, type: 'Custom' });
         await role.save();
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.status(201).json(role);
     } catch (error) {
         res.status(400).json({ message: 'Error creating role', error: error.message });
@@ -824,6 +863,7 @@ const updateRole = async (req, res) => {
         role.permissions = permissions || role.permissions;
         
         await role.save();
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.json(role);
     } catch (error) {
         res.status(400).json({ message: 'Error updating role', error: error.message });
@@ -841,6 +881,7 @@ const deleteRole = async (req, res) => {
         if (userCount > 0) return res.status(400).json({ message: `Cannot delete role. ${userCount} users are currently assigned to it.` });
         
         await Role.findByIdAndDelete(req.params.id);
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.json({ message: 'Role deleted' });
     } catch (error) {
         res.status(400).json({ message: 'Error deleting role', error: error.message });
@@ -984,6 +1025,7 @@ const updateGlobalSettings = async (req, res) => {
             );
         }
         
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.json({ message: 'Settings updated successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Error updating settings', error: error.message });
@@ -1041,6 +1083,7 @@ const createCategory = async (req, res) => {
     try {
         const category = new Category(req.body);
         await category.save();
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.status(201).json(category);
     } catch (error) {
         res.status(400).json({ message: 'Error creating category', error: error.message });
@@ -1051,6 +1094,7 @@ const updateCategory = async (req, res) => {
     try {
         const category = await Category.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!category) return res.status(404).json({ message: 'Category not found' });
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.json(category);
     } catch (error) {
         res.status(400).json({ message: 'Error updating category', error: error.message });
@@ -1061,6 +1105,7 @@ const deleteCategory = async (req, res) => {
     try {
         const category = await Category.findByIdAndDelete(req.params.id);
         if (!category) return res.status(404).json({ message: 'Category not found' });
+        if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.json({ message: 'Category deleted' });
     } catch (error) {
         res.status(500).json({ message: 'Error deleting category', error: error.message });

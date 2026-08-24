@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
+import { SuperadminSocketContext } from '../../context/SuperadminSocketContext';
 import { Truck, Search, Filter } from 'lucide-react';
 import { API_URL } from '../../config';
 
 const SuperadminDelivery = () => {
     const { user } = useContext(AuthContext);
+    const { lastUpdated } = useContext(SuperadminSocketContext);
     const [partners, setPartners] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -12,6 +14,13 @@ const SuperadminDelivery = () => {
     const [cities, setCities] = useState([]);
     const [cityFilter, setCityFilter] = useState('All');
     const [statusFilter, setStatusFilter] = useState('All');
+    const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(search), 500);
+        return () => clearTimeout(timer);
+    }, [search]);
 
     useEffect(() => {
         const fetchCities = async () => {
@@ -27,7 +36,7 @@ const SuperadminDelivery = () => {
         const fetchDelivery = async () => {
             setLoading(true);
             try {
-                const res = await fetch(`${API_URL}/superadmin/delivery?page=${page}&limit=20&city=${cityFilter}&status=${statusFilter}`, {
+                const res = await fetch(`${API_URL}/superadmin/delivery?page=${page}&limit=20&city=${cityFilter}&status=${statusFilter}&search=${debouncedSearch}`, {
                     headers: { Authorization: `Bearer ${user.token}` }
                 });
                 if (res.ok) {
@@ -42,7 +51,7 @@ const SuperadminDelivery = () => {
             }
         };
         fetchDelivery();
-    }, [user, page, cityFilter, statusFilter]);
+    }, [user, page, cityFilter, statusFilter, debouncedSearch, lastUpdated]);
 
     return (
         <div>
@@ -53,7 +62,7 @@ const SuperadminDelivery = () => {
             <div className="sa-card" style={{ marginBottom: '20px', display: 'flex', gap: '16px', alignItems: 'center' }}>
                 <div style={{ flex: 1, position: 'relative' }}>
                     <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                    <input type="text" placeholder="Search delivery partners (Phase 3)..." className="sa-input" style={{ paddingLeft: '40px', width: '100%' }} disabled />
+                    <input type="text" placeholder="Search delivery partners..." className="sa-input" style={{ paddingLeft: '40px', width: '100%' }} value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
                 </div>
                 <select className="sa-input" style={{ width: 'auto' }} value={cityFilter} onChange={(e) => { setCityFilter(e.target.value); setPage(1); }}>
                     <option value="All">All Cities</option>

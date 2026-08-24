@@ -38,7 +38,7 @@ const OrdersTab = ({ orders, orderFilter, setOrderFilter, fetchOrders, handleUpd
         <div>
             {/* Header Area */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-                <div style={{ display: 'flex', gap: '8px', background: '#fff', padding: '4px', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ display: 'flex', gap: '8px', background: '#fff', padding: '4px', borderRadius: '12px', border: '1px solid var(--border-subtle)', overflowX: 'auto', maxWidth: '100%' }}>
                     <button style={tabStyle(orderFilter === 'Instant')} onClick={() => setOrderFilter('Instant')}>Instant Orders</button>
                     <button style={tabStyle(orderFilter === 'Scheduled')} onClick={() => setOrderFilter('Scheduled')}>Scheduled Orders</button>
                     <button style={tabStyle(orderFilter === 'Subscriptions')} onClick={() => setOrderFilter('Subscriptions')}>Subscriptions</button>
@@ -87,7 +87,7 @@ const OrdersTab = ({ orders, orderFilter, setOrderFilter, fetchOrders, handleUpd
                                 </div>
 
                                 {/* Card Body */}
-                                <div style={{ padding: '24px', display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr 1fr', gap: '24px', alignItems: 'start' }}>
+                                <div style={{ padding: '24px', display: 'grid', gridTemplateColumns: window.innerWidth < 768 ? '1fr' : '1fr 1.5fr 1fr 1fr', gap: '24px', alignItems: 'start' }}>
                                     
                                     {/* Customer Info */}
                                     <div>

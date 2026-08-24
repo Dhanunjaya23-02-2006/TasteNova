@@ -42,6 +42,11 @@ const createReview = async (req, res) => {
 
         await chef.save();
 
+        const io = req.app.get('io');
+        if (io) {
+            io.to('chef_' + chefId).emit('new_review', review);
+        }
+
         res.status(201).json(review);
     } catch (error) {
         console.error(error);

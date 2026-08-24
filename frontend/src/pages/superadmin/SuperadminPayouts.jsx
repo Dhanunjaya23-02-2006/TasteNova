@@ -2,10 +2,12 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Search, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthContext } from '../../context/AuthContext';
+import { SuperadminSocketContext } from '../../context/SuperadminSocketContext';
 import { API_URL } from '../../config';
 
 const SuperadminPayouts = () => {
     const { user } = useContext(AuthContext);
+    const { lastUpdated } = useContext(SuperadminSocketContext);
     const [activeTab, setActiveTab] = useState('Pending');
     const [payouts, setPayouts] = useState([]);
 
@@ -18,7 +20,7 @@ const SuperadminPayouts = () => {
 
     useEffect(() => {
         if(user) fetchPayouts();
-    }, [user]);
+    }, [user, lastUpdated]);
 
     const filtered = payouts.filter(p => activeTab === 'Pending' ? p.status === 'Requested' : p.status === activeTab);
 

@@ -21,7 +21,7 @@ const Navbar = () => {
         const saved = sessionStorage.getItem('selectedCity');
         if (saved) {
             const parsed = JSON.parse(saved);
-            return { label: parsed.cityName || parsed.label, address: parsed.address || parsed.cityName, lat: parsed.lat, lng: parsed.lng };
+            return { label: parsed.cityName || parsed.label || 'Selected Location', address: parsed.address || parsed.cityName || '', lat: parsed.lat, lng: parsed.lng };
         }
         return { label: 'Select Location', address: '' };
     });
@@ -57,6 +57,12 @@ const Navbar = () => {
 
     // RENDER FOR LOGGED-IN CUSTOMERS (THE NEW LAYOUT)
     if (isCustomerLoggedIn) {
+        // Add class to body to ensure padding for bottom nav
+        useEffect(() => {
+            document.body.classList.add('has-mobile-bottom-nav');
+            return () => document.body.classList.remove('has-mobile-bottom-nav');
+        }, []);
+
         return (
             <>
                 <nav className="navbar animate-fade-up" style={{ padding: '0 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -88,8 +94,8 @@ const Navbar = () => {
                         </button>
                     </div>
 
-                    {/* Middle Section: Navigation Links & Search */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1, justifyContent: 'center' }}>
+                    {/* Middle Section: Navigation Links & Search (Desktop Only) */}
+                    <div className="hide-on-mobile-flex" style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1, justifyContent: 'center' }}>
                         <Link to="/" className="nav-link" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', fontSize: '0.8rem' }}>
                             <HomeIcon size={20} />
                             <span>Home</span>
@@ -119,7 +125,7 @@ const Navbar = () => {
 
                     {/* Right Section: Actions */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                        <Link to="/cart" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', textDecoration: 'none', color: 'var(--text-main)', position: 'relative' }}>
+                        <Link to="/cart" className="hide-on-mobile-flex" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', textDecoration: 'none', color: 'var(--text-main)', position: 'relative' }}>
                             <ShoppingBag size={22} />
                             {cartCount > 0 && (
                                 <span style={{ position: 'absolute', top: '-5px', right: '-8px', background: 'var(--primary-color)', color: '#fff', fontSize: '0.7rem', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>
@@ -129,13 +135,14 @@ const Navbar = () => {
                             <span style={{ fontSize: '0.8rem' }}>Cart</span>
                         </Link>
                         
-                        <Link to="/account/favourites" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', textDecoration: 'none', color: 'var(--text-main)' }}>
+                        <Link to="/account/favourites" className="hide-on-mobile-flex" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', textDecoration: 'none', color: 'var(--text-main)' }}>
                             <Heart size={20} />
                             <span style={{ fontSize: '0.75rem', fontWeight: '500' }}>Favourites</span>
                         </Link>
 
                         <Link 
                             to="/account"
+                            className="hide-on-mobile-flex"
                             style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '4px', textDecoration: 'none' }}
                         >
                             {user.profilePic ? (
@@ -147,16 +154,74 @@ const Navbar = () => {
                             )}
                             <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{user.name ? user.name.split(' ')[0] : 'User'}</span>
                         </Link>
+                        
+                        {/* Mobile Search/Cart Icons */}
+                        <div className="show-on-mobile-flex" style={{ display: 'none', alignItems: 'center', gap: '16px' }}>
+                            <Search size={22} style={{ color: 'var(--text-main)' }} />
+                            <Link to="/cart" style={{ position: 'relative', color: 'var(--text-main)' }}>
+                                <ShoppingBag size={22} />
+                                {cartCount > 0 && (
+                                    <span style={{ position: 'absolute', top: '-5px', right: '-8px', background: 'var(--primary)', color: '#fff', fontSize: '0.7rem', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>
+                                        {cartCount}
+                                    </span>
+                                )}
+                            </Link>
+                        </div>
                     </div>
                 </nav>
+
+                {/* Mobile Bottom Navigation */}
+                <div className="show-on-mobile-flex" style={{
+                    display: 'none',
+                    position: 'fixed',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: '70px',
+                    background: '#fff',
+                    borderTop: '1px solid var(--border-subtle)',
+                    zIndex: 1000,
+                    justifyContent: 'space-around',
+                    alignItems: 'center',
+                    boxShadow: '0 -4px 12px rgba(0,0,0,0.05)'
+                }}>
+                    <Link to="/" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: location.pathname === '/' ? 'var(--primary)' : 'var(--text-muted)', textDecoration: 'none' }}>
+                        <HomeIcon size={24} />
+                        <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>Home</span>
+                    </Link>
+                    <Link to="/chefs" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: location.pathname === '/chefs' ? 'var(--primary)' : 'var(--text-muted)', textDecoration: 'none' }}>
+                        <Search size={24} />
+                        <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>Search</span>
+                    </Link>
+                    <Link to="/cart" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: location.pathname === '/cart' ? 'var(--primary)' : 'var(--text-muted)', textDecoration: 'none', position: 'relative' }}>
+                        <ShoppingBag size={24} />
+                        {cartCount > 0 && (
+                            <span style={{ position: 'absolute', top: '-5px', right: '-8px', background: 'var(--primary)', color: '#fff', fontSize: '0.6rem', padding: '2px 5px', borderRadius: '10px', fontWeight: 'bold' }}>
+                                {cartCount}
+                            </span>
+                        )}
+                        <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>Cart</span>
+                    </Link>
+                    <Link to="/account" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: location.pathname.includes('/account') ? 'var(--primary)' : 'var(--text-muted)', textDecoration: 'none' }}>
+                        <UserIcon size={24} />
+                        <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>Profile</span>
+                    </Link>
+                </div>
                 
                 <LocationPickerModal 
                     isOpen={isLocationModalOpen}
                     onClose={() => setIsLocationModalOpen(false)}
                     onSelect={(loc) => {
-                        setActiveLocation(loc);
+                        const locationData = {
+                            label: loc.suburb || loc.label || loc.city || 'Selected Location',
+                            address: loc.address,
+                            lat: loc.lat,
+                            lng: loc.lng
+                        };
+                        setActiveLocation(locationData);
                         sessionStorage.setItem('selectedCity', JSON.stringify({
-                            cityName: loc.label,
+                            cityName: locationData.label,
+                            label: locationData.label,
                             address: loc.address,
                             lat: loc.lat,
                             lng: loc.lng
@@ -173,22 +238,53 @@ const Navbar = () => {
     }
 
     // ORIGINAL NAVBAR FOR LOGGED OUT USERS OR NON-CUSTOMERS
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
     return (
         <nav className="navbar animate-fade-up">
             <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
-                <img src="/logo.png" alt="TasteNova Logo" style={{ height: '56px', width: '56px', objectFit: 'contain', borderRadius: '50%', border: '1px solid var(--border-subtle)' }} />
-                <span className="nav-brand" style={{ fontSize: '1.6rem', color: 'var(--primary)' }}>TasteNova</span>
+                <img src="/logo.png" alt="TasteNova Logo" style={{ height: '45px', width: '45px', objectFit: 'contain', borderRadius: '50%', border: '1px solid var(--border-subtle)' }} />
+                <span className="nav-brand" style={{ fontSize: '1.4rem', color: 'var(--primary)' }}>TasteNova</span>
             </Link>
-            <ul className="nav-links">
-                <li><Link to="/" className="nav-link">Home</Link></li>
-                <li><Link to="/how-it-works" className="nav-link">How It Works</Link></li>
-                <li><Link to="/for-chefs" className="nav-link">For Chefs</Link></li>
-                <li><Link to="/cities" className="nav-link">Cities</Link></li>
-                <li><Link to="/about" className="nav-link">About Us</Link></li>
+
+            {/* Mobile Menu Toggle */}
+            <button 
+                className="show-on-mobile" 
+                style={{ display: 'none', background: 'none', border: 'none', color: 'var(--text-main)', padding: '8px' }}
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ width: '24px', height: '2px', background: 'currentColor', transition: '0.3s', transform: mobileMenuOpen ? 'rotate(45deg) translate(4px, 4px)' : 'none' }}></span>
+                    <span style={{ width: '24px', height: '2px', background: 'currentColor', transition: '0.3s', opacity: mobileMenuOpen ? 0 : 1 }}></span>
+                    <span style={{ width: '24px', height: '2px', background: 'currentColor', transition: '0.3s', transform: mobileMenuOpen ? 'rotate(-45deg) translate(4px, -4px)' : 'none' }}></span>
+                </div>
+            </button>
+
+            <ul className={`nav-links ${mobileMenuOpen ? 'mobile-open' : 'hide-on-mobile-flex'}`} style={{
+                display: mobileMenuOpen ? 'flex' : 'flex',
+                ...(mobileMenuOpen && window.innerWidth <= 768 ? {
+                    position: 'absolute',
+                    top: '80px',
+                    left: 0,
+                    right: 0,
+                    background: '#fff',
+                    flexDirection: 'column',
+                    padding: '20px',
+                    boxShadow: 'var(--shadow-floating)',
+                    borderBottom: '1px solid var(--border-subtle)',
+                    gap: '20px',
+                    alignItems: 'flex-start'
+                } : {})
+            }}>
+                <li><Link to="/" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Home</Link></li>
+                <li><Link to="/how-it-works" className="nav-link" onClick={() => setMobileMenuOpen(false)}>How It Works</Link></li>
+                <li><Link to="/for-chefs" className="nav-link" onClick={() => setMobileMenuOpen(false)}>For Chefs</Link></li>
+                <li><Link to="/cities" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Cities</Link></li>
+                <li><Link to="/about" className="nav-link" onClick={() => setMobileMenuOpen(false)}>About Us</Link></li>
                 
                 {user && !isAuthPage && (
                     <li>
-                        <Link to="/cart" className="nav-link" style={{ fontWeight: 700, color: 'var(--primary)' }}>
+                        <Link to="/cart" className="nav-link" onClick={() => setMobileMenuOpen(false)} style={{ fontWeight: 700, color: 'var(--primary)' }}>
                             <ShoppingBag size={20} />
                             Cart {cartCount > 0 && (
                                 <span style={{ 
@@ -210,7 +306,7 @@ const Navbar = () => {
                 {user ? (
                     <>
                         <li>
-                            <Link to="/account" className="nav-link">
+                            <Link to="/account" className="nav-link" onClick={() => setMobileMenuOpen(false)}>
                                 <UserIcon size={18} />
                                 {user.name.split(' ')[0]}
                             </Link>
@@ -222,8 +318,8 @@ const Navbar = () => {
                         </li>
                     </>
                 ) : (
-                    <li>
-                        <Link to="/login" className="btn btn-primary" style={{ padding: '10px 24px', fontSize: '0.95rem' }}>
+                    <li style={mobileMenuOpen ? { width: '100%' } : {}}>
+                        <Link to="/login" className="btn btn-primary" onClick={() => setMobileMenuOpen(false)} style={{ padding: '10px 24px', fontSize: '0.95rem', display: mobileMenuOpen ? 'block' : 'inline-block', textAlign: 'center' }}>
                             Login
                         </Link>
                     </li>

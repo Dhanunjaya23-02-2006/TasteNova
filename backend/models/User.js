@@ -10,10 +10,13 @@ const userSchema = mongoose.Schema({
     city: { type: mongoose.Schema.Types.ObjectId, ref: 'City' }, // Primary single city (Customers, Chefs, Delivery)
     assignedCities: [{ type: mongoose.Schema.Types.ObjectId, ref: 'City' }], // Array of cities for Admin Role
     assignedZones: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Zone' }], // Array of zones for Subadmin Role
+    customRole: { type: mongoose.Schema.Types.ObjectId, ref: 'Role' }, // For custom RBAC roles
     businessName: { type: String }, // For Chefs/Kitchens
     description: { type: String }, // For Chefs/Kitchens
     vehicleType: { type: String }, // For Delivery Partners
+    vehicleNumber: { type: String }, // For Delivery Partners (e.g., TS09 AB 1234)
     isOnline: { type: Boolean, default: false }, // For Delivery Partners / Chefs
+    todayOnlineHours: { type: Number, default: 0 }, // For Delivery Partners
     currentLocation: {
         lat: { type: Number },
         lng: { type: Number }
@@ -24,21 +27,21 @@ const userSchema = mongoose.Schema({
     numReviews: { type: Number, default: 0 },
     addresses: [{
         label: { type: String, enum: ['Home', 'Work', 'Other'], default: 'Home' },
-        receiverName: { type: String, required: true, trim: true },
-        phone: { type: String, required: true },
-        houseFlat: { type: String, required: true },
+        receiverName: { type: String, trim: true },
+        phone: { type: String },
+        houseFlat: { type: String },
         floor: { type: String },
         building: { type: String },
         street: { type: String },
-        area: { type: String, required: true },
+        area: { type: String },
         landmark: { type: String },
-        city: { type: String, required: true },
-        state: { type: String, required: true },
-        pincode: { type: String, required: true },
-        formattedAddress: { type: String, required: true },
+        city: { type: String },
+        state: { type: String },
+        pincode: { type: String },
+        formattedAddress: { type: String },
         location: {
             type: { type: String, enum: ['Point'], default: 'Point' },
-            coordinates: { type: [Number], required: true } // [longitude, latitude]
+            coordinates: { type: [Number] } // [longitude, latitude]
         },
         deliveryInstructions: { type: String },
         isDefault: { type: Boolean, default: false }
@@ -58,7 +61,10 @@ const userSchema = mongoose.Schema({
     otpExpires: { type: Date },
     documents: {
         idProof: { type: String },
-        fssaiCertificate: { type: String }
+        fssaiCertificate: { type: String },
+        drivingLicence: { type: String },
+        vehicleRc: { type: String },
+        vehicleInsurance: { type: String }
     },
     bankDetails: {
         accountName: { type: String },
