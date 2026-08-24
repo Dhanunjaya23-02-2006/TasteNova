@@ -638,8 +638,33 @@ const updateRefundStatus = async (req, res) => {
 const getTaxes = async (req, res) => {
     try {
         const TaxRule = require('../models/TaxRule');
+        const Order = require('../models/Order');
         const taxes = await TaxRule.find();
-        res.json(taxes);
+        
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const ordersThisMonth = await Order.find({
+            createdAt: { $gte: startOfMonth },
+            status: 'Completed'
+        });
+
+        const foodTaxRule = taxes.find(t => t.category.toLowerCase().includes('food') && t.status === 'Active');
+        const foodTaxRate = foodTaxRule ? (foodTaxRule.rate / 100) : 0.05;
+
+        let taxesCollected = 0;
+        ordersThisMonth.forEach(o => {
+            taxesCollected += (o.itemsPrice * foodTaxRate);
+        });
+
+        res.json({
+            rules: taxes,
+            stats: {
+                collectedMtd: taxesCollected,
+                reportsGenerated: 0
+            }
+        });
     } catch (error) {
         res.status(500).json({ message: 'Error fetching taxes', error: error.message });
     }
@@ -1017,6 +1042,30 @@ const getGlobalSettings = async (req, res) => {
         if (!settingsObj.supportEmail) settingsObj.supportEmail = 'support@tastenova.com';
         if (!settingsObj.baseDeliveryFee) settingsObj.baseDeliveryFee = 40;
         if (settingsObj.maintenanceMode === undefined) settingsObj.maintenanceMode = false;
+        
+        // Security defaults
+        if (settingsObj.sessionTimeout === undefined) settingsObj.sessionTimeout = 60;
+        if (settingsObj.requireTwoFactor === undefined) settingsObj.requireTwoFactor = false;
+        if (settingsObj.passwordExpiryDays === undefined) settingsObj.passwordExpiryDays = 90;
+        if (settingsObj.maxLoginAttempts === undefined) settingsObj.maxLoginAttempts = 5;
+
+        // Payments defaults
+        if (!settingsObj.razorpayKey) settingsObj.razorpayKey = '';
+        if (!settingsObj.gatewayMode) settingsObj.gatewayMode = 'sandbox';
+        if (settingsObj.payoutCycleDays === undefined) settingsObj.payoutCycleDays = 7;
+        if (settingsObj.autoApprovePayoutsUnder === undefined) settingsObj.autoApprovePayoutsUnder = 1000;
+
+        // Notifications defaults
+        if (settingsObj.enableEmailNotifications === undefined) settingsObj.enableEmailNotifications = true;
+        if (settingsObj.enableSmsNotifications === undefined) settingsObj.enableSmsNotifications = true;
+        if (!settingsObj.fcmServerKey) settingsObj.fcmServerKey = '';
+        if (!settingsObj.adminAlertEmail) settingsObj.adminAlertEmail = 'alerts@tastenova.com';
+
+        // Advanced defaults
+        if (settingsObj.maxConcurrentOrdersPerChef === undefined) settingsObj.maxConcurrentOrdersPerChef = 20;
+        if (settingsObj.apiRateLimit === undefined) settingsObj.apiRateLimit = 100;
+        if (settingsObj.debugMode === undefined) settingsObj.debugMode = false;
+        if (settingsObj.logRetentionDays === undefined) settingsObj.logRetentionDays = 30;
         
         res.json(settingsObj);
     } catch (error) {

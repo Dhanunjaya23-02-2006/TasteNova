@@ -10,6 +10,7 @@ const SuperadminTaxes = () => {
     const { lastUpdated } = useContext(SuperadminSocketContext);
     const [search, setSearch] = useState('');
     const [taxRules, setTaxRules] = useState([]);
+    const [stats, setStats] = useState({ collectedMtd: 0, reportsGenerated: 0 });
     
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,7 +20,11 @@ const SuperadminTaxes = () => {
     const fetchTaxes = async () => {
         try {
             const res = await fetch(`${API_URL}/superadmin/finance/taxes`, { headers: { Authorization: `Bearer ${user.token}` } });
-            if(res.ok) setTaxRules(await res.json());
+            if(res.ok) {
+                const data = await res.json();
+                setTaxRules(data.rules || []);
+                if(data.stats) setStats(data.stats);
+            }
         } catch(e) { console.error(e); }
     };
 
@@ -60,7 +65,7 @@ const SuperadminTaxes = () => {
                     </div>
                     <div>
                         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Taxes Collected (MTD)</div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>₹85,400</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>₹{stats.collectedMtd.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</div>
                     </div>
                 </div>
                 <div className="sa-card" style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -78,7 +83,7 @@ const SuperadminTaxes = () => {
                     </div>
                     <div>
                         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>Reports Generated</div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>12</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>{stats.reportsGenerated}</div>
                     </div>
                 </div>
             </div>
