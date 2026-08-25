@@ -15,6 +15,10 @@ const SettingsTab = () => {
     });
     const [isSaving, setIsSaving] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+    
+    const [isPasswordFormVisible, setIsPasswordFormVisible] = useState(false);
+    const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -110,6 +114,48 @@ const SettingsTab = () => {
             toast.error('An error occurred during upload');
         } finally {
             setIsUploading(false);
+        }
+    };
+
+    const handlePasswordChange = (e) => {
+        setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
+    };
+
+    const handlePasswordSubmit = async (e) => {
+        e.preventDefault();
+        if (passwordData.newPassword !== passwordData.confirmPassword) {
+            return toast.error("New passwords don't match!");
+        }
+        const regex = /^(?=.*[0-9])(?=.*[!@#$%^&*])(?=.*[A-Z]).+$/;
+        if (!regex.test(passwordData.newPassword)) {
+            return toast.error('Password must contain at least one number, one symbol, and one uppercase letter');
+        }
+        
+        setIsChangingPassword(true);
+        try {
+            const res = await fetch(`${API_URL}/users/change-password`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${user.token}`
+                },
+                body: JSON.stringify({
+                    currentPassword: passwordData.currentPassword,
+                    newPassword: passwordData.newPassword
+                })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                toast.success(data.message || 'Password changed successfully!');
+                setIsPasswordFormVisible(false);
+                setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+            } else {
+                toast.error(data.message || 'Failed to change password');
+            }
+        } catch (error) {
+            toast.error('An error occurred');
+        } finally {
+            setIsChangingPassword(false);
         }
     };
 
@@ -222,14 +268,47 @@ const SettingsTab = () => {
                     </h3>
                 </div>
                 
-                <div style={{ padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-                    <div>
-                        <h4 style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '1rem', marginBottom: '4px' }}>Password</h4>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>Update your password to keep your account secure.</p>
-                    </div>
-                    <button className="btn btn-outline" style={{ padding: '10px 20px', borderRadius: '8px' }}>
-                        Change Password
-                    </button>
+                <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {!isPasswordFormVisible ? (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                            <div>
+                                <h4 style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '1rem', marginBottom: '4px' }}>Password</h4>
+                                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>Update your password to keep your account secure.</p>
+                            </div>
+                            <button onClick={() => setIsPasswordFormVisible(true)} className="btn btn-outline" type="button" style={{ padding: '10px 20px', borderRadius: '8px' }}>
+                                Change Password
+                            </button>
+                        </div>
+                    ) : (
+                        <form onSubmit={handlePasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--bg-body)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+                            <h4 style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '1rem', marginBottom: '8px' }}>Change Password</h4>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)' }}>Current Password</label>
+                                <input type="password" name="currentPassword" value={passwordData.currentPassword} onChange={handlePasswordChange} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-surface)', color: 'var(--text-main)' }} />
+                            </div>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)' }}>New Password</label>
+                                <input type="password" name="newPassword" value={passwordData.newPassword} onChange={handlePasswordChange} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-surface)', color: 'var(--text-main)' }} />
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Must contain 1 uppercase, 1 number, and 1 symbol (!@#$%^&*)</span>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)' }}>Confirm New Password</label>
+                                <input type="password" name="confirmPassword" value={passwordData.confirmPassword} onChange={handlePasswordChange} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-surface)', color: 'var(--text-main)' }} />
+                            </div>
+                            
+                            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
+                                <button type="button" onClick={() => setIsPasswordFormVisible(false)} className="btn" style={{ padding: '10px 20px', borderRadius: '8px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-main)' }}>
+                                    Cancel
+                                </button>
+                                <button type="submit" disabled={isChangingPassword} className="btn btn-primary" style={{ padding: '10px 20px', borderRadius: '8px' }}>
+                                    {isChangingPassword ? 'Updating...' : 'Update Password'}
+                                </button>
+                            </div>
+                        </form>
+                    )}
                 </div>
             </div>
 

@@ -25,7 +25,8 @@ const {
     deletePaymentMethod,
     getUserFavourites,
     getCustomerWallet,
-    topUpCustomerWallet
+    topUpCustomerWallet,
+    changePassword
 } = require('../controllers/userController');
 const { authUser, verifyOtp } = require('../controllers/authController');
 const { protect, superAdmin, admin } = require('../middleware/authMiddleware');
@@ -56,5 +57,6 @@ router.post('/payment-methods', protect, addPaymentMethod);
 router.delete('/payment-methods/:id', protect, deletePaymentMethod);
 router.get('/wallet', protect, getCustomerWallet);
 router.post('/wallet/topup', protect, topUpCustomerWallet);
+router.put('/change-password', protect, changePassword);
 
 module.exports = router;

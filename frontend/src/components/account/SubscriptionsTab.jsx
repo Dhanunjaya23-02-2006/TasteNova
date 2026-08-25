@@ -1,70 +1,62 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { API_URL } from '../../config';
+import { SocketContext } from '../../context/SocketContext';
 import { Repeat, Calendar, Clock, MapPin, ChefHat, PauseCircle, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const SubscriptionsTab = () => {
     const { user } = useContext(AuthContext);
+    const { socket } = useContext(SocketContext);
     const [subscriptions, setSubscriptions] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        // Since we are mocking for the UI Phase, we will simulate fetching
-        const fetchSubscriptions = async () => {
-            setLoading(true);
-            try {
-                const res = await fetch(`${API_URL}/subscriptions/my`, {
-                    headers: { Authorization: `Bearer ${user.token}` }
-                });
-                
-                if (res.ok) {
-                    const data = await res.json();
-                    setSubscriptions(data.data || []);
-                } else {
-                    // Load mock data if backend endpoint isn't fully ready
-                    setSubscriptions([
-                        {
-                            _id: 'sub_123',
-                            planName: 'Daily Lunch Plan',
-                            chefName: 'Lakshmi Home Kitchen',
-                            status: 'Active',
-                            startDate: '2025-05-10T12:00:00Z',
-                            renewalDate: '2025-06-10T12:00:00Z',
-                            price: 3500,
-                            mealsRemaining: 21,
-                            totalMeals: 30,
-                            schedule: 'Mon-Fri • 12:30 PM',
-                            deliveryAddress: 'H.No: 8-2-293/82, Siddiq Nagar, Gachibowli, Hyderabad',
-                            image: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80'
-                        },
-                        {
-                            _id: 'sub_124',
-                            planName: 'Weekend Dinner Special',
-                            chefName: 'Anjali\'s Kitchen',
-                            status: 'Paused',
-                            startDate: '2025-05-01T12:00:00Z',
-                            renewalDate: '2025-05-31T12:00:00Z',
-                            price: 1200,
-                            mealsRemaining: 2,
-                            totalMeals: 8,
-                            schedule: 'Sat-Sun • 8:00 PM',
-                            deliveryAddress: 'H.No: 8-2-293/82, Siddiq Nagar, Gachibowli, Hyderabad',
-                            image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80'
-                        }
-                    ]);
-                }
-            } catch (error) {
-                console.error("Error fetching subscriptions", error);
-            } finally {
-                setLoading(false);
+    const fetchSubscriptions = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch(`${API_URL}/subscriptions/my`, {
+                headers: { Authorization: `Bearer ${user.token}` }
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                setSubscriptions(data.data || []);
+            } else {
+                setSubscriptions([]);
             }
-        };
+        } catch (error) {
+            console.error("Error fetching subscriptions", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
 
         if (user) {
             fetchSubscriptions();
         }
     }, [user]);
+
+    useEffect(() => {
+        if (!socket) return;
+        
+        const handleSubscriptionUpdated = (data) => {
+            setSubscriptions(prev => prev.map(sub => {
+                if (sub._id === data.subscriptionId) {
+                    toast.success(`Subscription '${sub.planName || ''}' is now ${data.status}`);
+                    return { ...sub, status: data.status };
+                }
+                return sub;
+            }));
+        };
+
+        socket.on('subscription_updated', handleSubscriptionUpdated);
+        
+        return () => {
+            socket.off('subscription_updated', handleSubscriptionUpdated);
+        };
+    }, [socket]);
 
     const getStatusStyle = (status) => {
         switch (status) {

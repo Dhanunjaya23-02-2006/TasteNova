@@ -969,6 +969,47 @@ const topUpCustomerWallet = async (req, res) => {
     }
 };
 
+// @desc    Change user password
+// @route   PUT /api/users/change-password
+// @access  Private
+const changePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        
+        // Ensure bcrypt is available
+        const bcrypt = require('bcrypt');
+        
+        // Find user by ID and include password since it's deselected by default
+        const user = await User.findById(req.user._id).select('+password');
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        // Check if current password is correct
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Incorrect current password' });
+        }
+        
+        // Enforce complexity on backend just in case
+        const regex = /^(?=.*[0-9])(?=.*[!@#$%^&*])(?=.*[A-Z]).+$/;
+        if (!regex.test(newPassword)) {
+            return res.status(400).json({ message: 'Password must contain at least one number, one symbol, and one uppercase letter' });
+        }
+        
+        // Hash new password
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+        
+        await user.save();
+        
+        res.json({ message: 'Password changed successfully' });
+    } catch (error) {
+        console.error('Change password error:', error);
+        res.status(500).json({ message: 'Server error during password change' });
+    }
+};
 module.exports = {
     registerUser,
     registerPartner,
@@ -996,5 +1037,6 @@ module.exports = {
     deletePaymentMethod,
     getUserFavourites,
     getCustomerWallet,
-    topUpCustomerWallet
+    topUpCustomerWallet,
+    changePassword
 };

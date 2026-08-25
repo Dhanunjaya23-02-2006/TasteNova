@@ -3,17 +3,16 @@ import { Bell, PackageCheck, Gift, CreditCard, ChevronRight } from 'lucide-react
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { API_URL } from '../../config';
-import { io } from 'socket.io-client';
+import { SocketContext } from '../../context/SocketContext';
 import toast from 'react-hot-toast';
 
 const NotificationsTab = () => {
     const { user } = useContext(AuthContext);
+    const { socket } = useContext(SocketContext);
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        let socket;
-
         const fetchNotifications = async () => {
             try {
                 const res = await fetch(`${API_URL}/notifications`, {
@@ -32,28 +31,23 @@ const NotificationsTab = () => {
 
         if (user) {
             fetchNotifications();
-
-            // Initialize socket connection
-            socket = io(API_URL.replace('/api', ''), {
-                auth: { token: user.token }
-            });
-
-            socket.on('connect', () => {
-                socket.emit('join_user');
-            });
-
-            socket.on('new_notification', (newNotif) => {
-                setNotifications(prev => [newNotif, ...prev]);
-                toast.success(newNotif.title, { icon: '🔔' });
-            });
         }
-
-        return () => {
-            if (socket) {
-                socket.disconnect();
-            }
-        };
     }, [user]);
+
+    useEffect(() => {
+        if (!socket) return;
+        
+        const handleNewNotification = (newNotif) => {
+            setNotifications(prev => [newNotif, ...prev]);
+            toast.success(newNotif.title || 'New Notification', { icon: '🔔' });
+        };
+
+        socket.on('new_notification', handleNewNotification);
+        
+        return () => {
+            socket.off('new_notification', handleNewNotification);
+        };
+    }, [socket]);
 
     const handleMarkAsRead = async (id, e) => {
         // Only call API if we aren't clicking the wrapper link directly, or let the link proceed if it's a normal click

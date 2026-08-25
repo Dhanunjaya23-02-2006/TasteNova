@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { API_URL } from '../../config';
+import { SocketContext } from '../../context/SocketContext';
 import { Wallet, Plus, ArrowUpRight, ArrowDownLeft, ShieldCheck, IndianRupee, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const WalletTab = () => {
     const { user } = useContext(AuthContext);
+    const { socket } = useContext(SocketContext);
     const [balance, setBalance] = useState(0);
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -48,6 +50,36 @@ const WalletTab = () => {
     useEffect(() => {
         if (user) fetchWallet();
     }, [user, fetchWallet]);
+
+    useEffect(() => {
+        if (!socket) return;
+        
+        const handleWalletUpdate = (data) => {
+            setBalance(data.balance);
+            if (data.transaction) {
+                const txn = data.transaction;
+                setTransactions(prev => [
+                    {
+                        id: txn._id,
+                        type: txn.type,
+                        amount: txn.amount,
+                        desc: txn.desc || txn.description || (txn.type === 'credit' ? 'Wallet Credit' : 'Wallet Debit'),
+                        date: txn.createdAt,
+                        icon: txn.type === 'credit' ? ArrowDownLeft : ArrowUpRight,
+                        color: txn.type === 'credit' ? '#2ed573' : '#ff4757'
+                    },
+                    ...prev
+                ]);
+            }
+            toast.success(`Wallet updated. New balance: ₹${data.balance}`);
+        };
+
+        socket.on('wallet_update', handleWalletUpdate);
+        
+        return () => {
+            socket.off('wallet_update', handleWalletUpdate);
+        };
+    }, [socket]);
 
     // Load Razorpay script dynamically
     const loadRazorpayScript = () => {

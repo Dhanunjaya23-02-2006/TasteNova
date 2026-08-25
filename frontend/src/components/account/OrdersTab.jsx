@@ -2,38 +2,61 @@ import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { API_URL } from '../../config';
 import { Link } from 'react-router-dom';
+import { SocketContext } from '../../context/SocketContext';
 import { ArrowRight, Clock, MapPin, ChefHat, Package } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const OrdersTab = () => {
     const { user } = useContext(AuthContext);
+    const { socket } = useContext(SocketContext);
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchOrders = async () => {
-            try {
-                const res = await fetch(`${API_URL}/orders/myorders`, {
-                    headers: { Authorization: `Bearer ${user.token}` }
-                });
-                const data = await res.json();
-                
-                if (res.ok) {
-                    setOrders(data.data || []);
-                } else {
-                    toast.error(data.message || 'Failed to fetch orders');
-                }
-            } catch (error) {
-                toast.error('An error occurred while fetching orders');
-            } finally {
-                setLoading(false);
+    const fetchOrders = async () => {
+        try {
+            const res = await fetch(`${API_URL}/orders/myorders`, {
+                headers: { Authorization: `Bearer ${user.token}` }
+            });
+            const data = await res.json();
+            
+            if (res.ok) {
+                setOrders(data.data || []);
+            } else {
+                toast.error(data.message || 'Failed to fetch orders');
             }
-        };
+        } catch (error) {
+            toast.error('An error occurred while fetching orders');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
 
         if (user) {
             fetchOrders();
         }
     }, [user]);
+
+    useEffect(() => {
+        if (!socket) return;
+        
+        const handleOrderStatusUpdate = (data) => {
+            setOrders(prevOrders => prevOrders.map(order => {
+                if (order._id === data.orderId) {
+                    toast.success(`Order #${data.orderId.substring(data.orderId.length - 6).toUpperCase()} is now ${data.status}`);
+                    return { ...order, status: data.status };
+                }
+                return order;
+            }));
+        };
+
+        socket.on('order_status_update', handleOrderStatusUpdate);
+        
+        return () => {
+            socket.off('order_status_update', handleOrderStatusUpdate);
+        };
+    }, [socket]);
 
     const getStatusColor = (status) => {
         switch (status) {
