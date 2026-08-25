@@ -323,8 +323,8 @@ function App() {
                 <Route path="banners" element={<SuperadminBanners />} />
                 <Route path="campaigns" element={<SuperadminCampaigns />} />
                 <Route path="featured" element={<SuperadminFeatured />} />
-                <Route path="business-analytics" element={<SuperadminBusinessAnalytics />} />
-                <Route path="city-analytics" element={<SuperadminCityAnalytics />} />
+                <Route path="analytics/business" element={<SuperadminBusinessAnalytics />} />
+                <Route path="analytics/city" element={<SuperadminCityAnalytics />} />
                 <Route path="categories" element={<SuperadminCategories />} />
                 <Route path="pages" element={<SuperadminPages />} />
                 <Route path="system-health" element={<SuperadminSystemHealth />} />
