@@ -26,6 +26,7 @@ const Navbar = () => {
         return { label: 'Select Location', address: '' };
     });
     const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const dropdownRef = useRef(null);
 
     const isAuthPage = ['/login', '/register', '/forgot-password', '/verify-otp'].includes(location.pathname) || location.pathname.includes('/register');
@@ -241,7 +242,6 @@ const Navbar = () => {
     }
 
     // ORIGINAL NAVBAR FOR LOGGED OUT USERS OR NON-CUSTOMERS
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     return (
         <nav className="navbar animate-fade-up">
