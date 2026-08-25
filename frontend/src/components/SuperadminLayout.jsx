@@ -272,7 +272,7 @@ const SuperadminLayout = () => {
                     </div>
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        <button className="subadmin-icon-btn"><Activity size={20} /></button>
+                        <button className="subadmin-icon-btn" onClick={() => navigate('/superadmin/system-health')} title="System Health"><Activity size={20} /></button>
                         
                         <div ref={userRef} style={{ position: 'relative' }}>
                             <div className="sup-user-dropdown" onClick={() => setUserOpen(!userOpen)} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '6px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px' }}>
