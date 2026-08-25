@@ -55,13 +55,16 @@ const Navbar = () => {
 
     const isCustomerLoggedIn = user && user.role === 'user';
 
-    // RENDER FOR LOGGED-IN CUSTOMERS (THE NEW LAYOUT)
-    if (isCustomerLoggedIn) {
-        // Add class to body to ensure padding for bottom nav
-        useEffect(() => {
+    // Add class to body to ensure padding for bottom nav when customer is logged in
+    useEffect(() => {
+        if (isCustomerLoggedIn) {
             document.body.classList.add('has-mobile-bottom-nav');
             return () => document.body.classList.remove('has-mobile-bottom-nav');
-        }, []);
+        }
+    }, [isCustomerLoggedIn]);
+
+    // RENDER FOR LOGGED-IN CUSTOMERS (THE NEW LAYOUT)
+    if (isCustomerLoggedIn) {
 
         return (
             <>
