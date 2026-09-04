@@ -27,8 +27,7 @@ const permissionCategories = [
         permissions: [
             { label: 'View all orders in assigned city', granted: true },
             { label: 'Cancel active orders', granted: true },
-            { label: 'View order payment details', granted: true },
-            { label: 'Reassign delivery partners', granted: true },
+            { label: 'Resolve active disputes', granted: true },
             { label: 'Issue manual refunds above threshold', granted: false },
             { label: 'Modify order amounts after placement', granted: false },
         ]
@@ -43,18 +42,6 @@ const permissionCategories = [
             { label: 'View customer support tickets', granted: true },
             { label: 'Delete customer accounts', granted: false },
             { label: 'Access customer payment methods', granted: false },
-        ]
-    },
-    {
-        title: 'Delivery Partners',
-        icon: Truck,
-        color: '#e67e22',
-        permissions: [
-            { label: 'View delivery partners in assigned city', granted: true },
-            { label: 'Verify or reject delivery registrations', granted: true },
-            { label: 'Suspend delivery partner accounts', granted: true },
-            { label: 'View live delivery tracking', granted: true },
-            { label: 'Modify delivery partner payouts', granted: false },
         ]
     },
     {
@@ -98,8 +85,7 @@ const permissionCategories = [
         icon: Settings,
         color: '#7f8c8d',
         permissions: [
-            { label: 'View city configuration', granted: true },
-            { label: 'Modify delivery fees or zones', granted: false },
+            { label: 'Add or remove operational zones', granted: false },
             { label: 'Change commission rates', granted: false },
             { label: 'Manage other sub-admins', granted: false },
             { label: 'Access system health and logs', granted: false },

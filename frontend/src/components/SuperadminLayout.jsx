@@ -25,7 +25,6 @@ const navSections = [
         items: [
             { to: '/superadmin/orders', label: 'Orders', icon: ShoppingBag },
             { to: '/superadmin/chefs', label: 'Chefs', icon: ChefHat },
-            { to: '/superadmin/delivery', label: 'Delivery', icon: Truck },
             { to: '/superadmin/customers', label: 'Customers', icon: Users },
             { to: '/superadmin/support', label: 'Support', icon: MessageCircle },
         ]

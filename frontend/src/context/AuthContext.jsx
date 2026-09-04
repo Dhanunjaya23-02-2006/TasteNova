@@ -9,14 +9,14 @@ export const AuthProvider = ({ children }) => {
         return storedUser ? JSON.parse(storedUser) : null;
     });
 
-    // useEffect is no longer needed for initial re-hydration as it's handled in useState
-
     const login = (userData) => {
         // Map accessToken to token for frontend API compatibility
         const tokenToStore = userData.accessToken || userData.token;
+        const refreshToStore = userData.refreshToken || null;
         const safeUserData = { ...userData, token: tokenToStore };
         delete safeUserData.accessToken;
-        delete safeUserData.refreshToken;
+        // Keep refreshToken in the stored data so api.js can use it
+        safeUserData.refreshToken = refreshToStore;
         
         setUser(safeUserData);
         localStorage.setItem('userInfo', JSON.stringify(safeUserData));
@@ -24,12 +24,16 @@ export const AuthProvider = ({ children }) => {
 
     const logout = async () => {
         try {
+            const storedUser = localStorage.getItem('userInfo');
+            const refreshToken = storedUser ? JSON.parse(storedUser).refreshToken : null;
             await fetch(`${API_URL}/auth/logout`, { 
                 method: 'POST',
-                credentials: 'omit' // or use api.post('/auth/logout') if imported
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ refreshToken })
             });
         } catch (e) {
-            console.error(e);
+            // Logout API failure is non-critical; clear local state regardless
         }
         setUser(null);
         localStorage.removeItem('userInfo');

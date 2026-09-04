@@ -6,9 +6,10 @@ import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import {
     TrendingUp, ShoppingBag, ChefHat, Star, Users, Wallet,
-    Calendar, ArrowRight, Clock, CheckCircle2, Package, Megaphone, Plus, FileText, ChevronDown, Gift, ShieldCheck, Ticket, BarChart3
+    Calendar, ArrowRight, Clock, CheckCircle2, Package, Megaphone, Plus, FileText, ChevronDown, Gift, AlertCircle, Activity,
+    CalendarCheck, Sparkles
 } from 'lucide-react';
-import io from 'socket.io-client';
+import { SocketContext } from '../../context/SocketContext';
 
 // CSS classes as styles
 const cardBase = {
@@ -21,6 +22,7 @@ const cardBase = {
 
 const ChefDashboardPage = () => {
     const { user } = useContext(AuthContext);
+    const { socket } = useContext(SocketContext);
     const [orders, setOrders] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
     const [stats, setStats] = useState({
@@ -40,32 +42,43 @@ const ChefDashboardPage = () => {
     }, []);
 
     useEffect(() => {
-        if (user) {
-            const socket = io(API_URL.replace('/api', ''));
-            socket.emit('join_chef', user._id);
-            socket.on('new_order_alert', () => {
+        if (socket) {
+            const handleNewOrder = () => {
                 toast.success('NEW ORDER!', { duration: 10000, icon: '🔔' });
                 fetchOrders();
                 fetchStats();
-            });
-            socket.on('order_status_update', () => {
+            };
+            const handleStatusUpdate = () => {
                 fetchOrders();
                 fetchStats();
-            });
-            socket.on('new_review', () => {
+            };
+            const handleNewReview = () => {
                 toast.success('New review received!', { icon: '⭐' });
                 fetchStats();
-            });
-            socket.on('new_booking', () => {
+            };
+            const handleNewBooking = () => {
                 toast.success('New party booking request!', { icon: '📅' });
                 fetchStats();
-            });
-            socket.on('booking_update', () => {
+            };
+            const handleBookingUpdate = () => {
                 fetchStats();
-            });
-            return () => socket.disconnect();
+            };
+
+            socket.on('new_order_alert', handleNewOrder);
+            socket.on('order_status_update', handleStatusUpdate);
+            socket.on('new_review', handleNewReview);
+            socket.on('new_booking', handleNewBooking);
+            socket.on('booking_update', handleBookingUpdate);
+
+            return () => {
+                socket.off('new_order_alert', handleNewOrder);
+                socket.off('order_status_update', handleStatusUpdate);
+                socket.off('new_review', handleNewReview);
+                socket.off('new_booking', handleNewBooking);
+                socket.off('booking_update', handleBookingUpdate);
+            };
         }
-    }, [user]);
+    }, [socket]);
 
     const fetchOrders = async () => {
         try {

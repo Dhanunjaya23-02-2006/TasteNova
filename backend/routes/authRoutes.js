@@ -6,6 +6,6 @@ const { protect } = require('../middleware/authMiddleware');
 router.post('/login', authUser);
 router.post('/verify-otp', verifyOtp);
 router.post('/refresh', refreshToken);
-router.post('/logout', protect, logout);
+router.post('/logout', logout);
 
 module.exports = router;

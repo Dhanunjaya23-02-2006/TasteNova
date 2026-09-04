@@ -24,7 +24,10 @@ startEscrowSettlementJob();
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+    origin: '*',
+    credentials: true
+}));
 app.use(compression());
 
 // Security Middleware
@@ -46,7 +49,7 @@ app.use(cookieParser()); // Cookie parser for JWT
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: '*', // For dev, restrict in prod
+        origin: '*',
         methods: ['GET', 'POST']
     }
 });
@@ -110,20 +113,14 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('join_delivery', () => {
-        socket.join('delivery_partners');
-        debug(`Delivery socket joined room delivery_partners`);
-    });
+    // Delivery socket removed
 
     socket.on('join_ticket', (ticketId) => {
         socket.join('ticket_' + ticketId);
         debug(`Socket joined ticket room ticket_${ticketId}`);
     });
 
-    socket.on('send_location', (data) => {
-        // In a real app, verify that socket.user is the delivery partner assigned to data.orderId
-        io.to('track_' + data.orderId).emit('receive_location', data);
-    });
+    // send_location socket removed
 
     socket.on('send_message', (data) => {
         io.to(data.orderId).emit('receive_message', data);
@@ -143,7 +140,6 @@ const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const adminRoutes = require('./routes/adminRoutes');
-const deliveryRoutes = require('./routes/deliveryRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 // const dashboardRoutes = require('./routes/dashboardRoutes');
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
@@ -173,7 +169,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/orders', orderRoutes);
-app.use('/api/delivery', deliveryRoutes);
 app.use('/api/payment', paymentRoutes);
 // app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/menu', menuRoutes);

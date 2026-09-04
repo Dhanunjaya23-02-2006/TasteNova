@@ -2,29 +2,35 @@ import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { API_URL } from '../../config';
 import BookingsTab from '../../components/chef/BookingsTab';
-import io from 'socket.io-client';
+import { SocketContext } from '../../context/SocketContext';
 import toast from 'react-hot-toast';
 
 const ChefPartyOrdersPage = () => {
     const { user } = useContext(AuthContext);
+    const { socket } = useContext(SocketContext);
     const [bookings, setBookings] = useState([]);
 
     useEffect(() => { 
         fetchBookings(); 
         
-        if (user) {
-            const socket = io(API_URL.replace('/api', ''));
-            socket.emit('join_chef', user._id);
-            socket.on('new_booking', () => {
+        if (socket) {
+            const handleNewBooking = () => {
                 toast.success('NEW PARTY BOOKING REQUEST!', { icon: '📅' });
                 fetchBookings();
-            });
-            socket.on('booking_update', () => {
+            };
+            const handleBookingUpdate = () => {
                 fetchBookings();
-            });
-            return () => socket.disconnect();
+            };
+
+            socket.on('new_booking', handleNewBooking);
+            socket.on('booking_update', handleBookingUpdate);
+
+            return () => {
+                socket.off('new_booking', handleNewBooking);
+                socket.off('booking_update', handleBookingUpdate);
+            };
         }
-    }, [user]);
+    }, [socket]);
 
     const fetchBookings = async () => {
         try {

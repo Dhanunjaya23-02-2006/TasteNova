@@ -53,7 +53,7 @@ const ProfileTab = () => {
     const [businessName, setBusinessName] = useState('');
     const [description, setDescription] = useState('');
     const [kitchenImage, setKitchenImage] = useState('');
-    const [deliveryRadius, setDeliveryRadius] = useState(6);
+
     const [kitchenLocation, setKitchenLocation] = useState(null);
     const [statusText, setStatusText] = useState('');
 
@@ -78,7 +78,7 @@ const ProfileTab = () => {
                 setBusinessName(data.businessName || '');
                 setDescription(data.description || '');
                 setKitchenImage(data.kitchenImage || '');
-                if (data.deliveryRadius) setDeliveryRadius(data.deliveryRadius);
+
                 if (data.kitchenLocation && data.kitchenLocation.coordinates) {
                     setKitchenLocation({ 
                         lat: data.kitchenLocation.coordinates[1], 
@@ -98,7 +98,7 @@ const ProfileTab = () => {
         try {
             const reqBody = { name, phone, role, businessName, description, kitchenImage, addresses };
             if (role === 'chef') {
-                reqBody.deliveryRadius = deliveryRadius;
+
                 if (kitchenLocation) {
                     reqBody.kitchenLocation = { 
                         type: 'Point', 
@@ -229,7 +229,7 @@ const ProfileTab = () => {
                         <select className="form-control" value={role} onChange={e => setRole(e.target.value)}>
                             <option value="user" style={{ background: 'var(--bg-surface)', color: 'var(--text-main)' }}>Customer (Order Food)</option>
                             <option value="chef" style={{ background: 'var(--bg-surface)', color: 'var(--text-main)' }}>Home/Cloud Kitchen Owner (Chef)</option>
-                            <option value="delivery" style={{ background: 'var(--bg-surface)', color: 'var(--text-main)' }}>Delivery Partner</option>
+
                         </select>
                     </div>
 
@@ -253,17 +253,7 @@ const ProfileTab = () => {
                             </div>
 
                             <div style={{ marginBottom: '16px', background: 'rgba(212, 175, 55, 0.05)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(212, 175, 55, 0.2)' }}>
-                                <h4 style={{ marginBottom: '15px', color: 'var(--primary)' }}>Hyperlocal Delivery Settings</h4>
-                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: 'var(--text-dark)', fontSize: '0.9rem' }}>
-                                    Delivery Radius (km): {deliveryRadius} km
-                                </label>
-                                <input 
-                                    type="range" 
-                                    min="2" max="10" step="1" 
-                                    value={deliveryRadius} 
-                                    onChange={e => setDeliveryRadius(parseInt(e.target.value))}
-                                    style={{ width: '100%', accentColor: 'var(--primary)', marginBottom: '15px' }}
-                                />
+                                <h4 style={{ marginBottom: '15px', color: 'var(--primary)' }}>Hyperlocal Kitchen Settings</h4>
 
                                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: 'var(--text-dark)', fontSize: '0.9rem' }}>Exact Kitchen Location (Drop a pin)</label>
                                 <div style={{ height: '200px', width: '100%', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border)', marginBottom: '10px' }}>

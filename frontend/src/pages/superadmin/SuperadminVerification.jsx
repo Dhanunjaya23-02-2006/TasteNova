@@ -8,7 +8,6 @@ const SuperadminVerification = () => {
     const { user } = useContext(AuthContext);
     const { lastUpdated } = useContext(SuperadminSocketContext);
     const [chefs, setChefs] = useState([]);
-    const [delivery, setDelivery] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const fetchQueue = async () => {
@@ -18,7 +17,6 @@ const SuperadminVerification = () => {
             if (res.ok) {
                 const d = await res.json();
                 setChefs(d.chefs);
-                setDelivery(d.delivery);
             }
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
@@ -84,33 +82,7 @@ const SuperadminVerification = () => {
                     )}
                 </div>
 
-                {/* Delivery Queue */}
-                <div className="sa-card">
-                    <h3 style={{ fontSize: '1.2rem', marginBottom: '16px', fontFamily: "'DM Serif Display', serif" }}>Pending Delivery Partners ({delivery.length})</h3>
-                    {delivery.length === 0 ? <div className="sa-empty">No pending delivery applications.</div> : (
-                        <table className="sa-table">
-                            <thead><tr><th>Name</th><th>City</th><th>Vehicle</th><th>Actions</th></tr></thead>
-                            <tbody>
-                                {delivery.map(d => (
-                                    <tr key={d._id}>
-                                        <td>
-                                            <div style={{ fontWeight: 600 }}>{d.name}</div>
-                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{d.phone}</div>
-                                        </td>
-                                        <td>{d.city?.name || '—'}</td>
-                                        <td style={{ color: 'var(--text-muted)' }}>{d.vehicleType || '—'} {d.vehicleNumber || ''}</td>
-                                        <td>
-                                            <div style={{ display: 'flex', gap: '6px' }}>
-                                                <button className="btn btn-primary" style={{ padding: '4px 10px', fontSize: '0.8rem' }} onClick={() => handleVerify(d._id, 'active')}>Approve</button>
-                                                <button className="btn btn-outline" style={{ padding: '4px 10px', fontSize: '0.8rem', color: 'var(--error)' }} onClick={() => handleVerify(d._id, 'suspended')}>Reject</button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
-                </div>
+
 
             </div>
         </div>

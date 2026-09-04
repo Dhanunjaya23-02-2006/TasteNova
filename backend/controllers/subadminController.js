@@ -612,7 +612,9 @@ const getSubAdmins = async (req, res) => {
         const subadmins = await User.find({ 
             role: 'subadmin',
             assignedCities: { $in: req.user.assignedCities }
-        }).populate('assignedCities', 'name');
+        })
+        .populate('assignedCities', 'name')
+        .populate('assignedZones', 'name');
         
         res.json(subadmins);
     } catch (error) {
@@ -621,22 +623,24 @@ const getSubAdmins = async (req, res) => {
 };
 
 const createSubAdmin = async (req, res) => {
+    const bcrypt = require('bcryptjs');
     try {
         if (req.user.role !== 'admin') return res.status(403).json({ message: 'Only Admins can create Sub-Admins' });
         
-        const { name, email, phone, password, assignedCities } = req.body;
+        const { name, email, phone, password, assignedZones } = req.body;
         
-        // Ensure the admin is only assigning cities they themselves manage
-        const isValidCities = assignedCities.every(city => req.user.assignedCities.map(c => c.toString()).includes(city));
-        if (!isValidCities) {
-            return res.status(403).json({ message: 'You can only assign cities that you manage.' });
-        }
+        // Zonal sub-admins inherit the Regional Admin's cities.
+        const assignedCities = req.user.assignedCities;
+        
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
 
-        // We would normally hash password here if not handled by pre-save hook, assuming pre-save hook handles it.
         const newSubAdmin = new User({
-            name, email, phone, password,
+            name, email, phone, password: hashedPassword,
             role: 'subadmin',
-            assignedCities
+            assignedCities,
+            assignedZones,
+            status: 'active'
         });
         await newSubAdmin.save();
         res.status(201).json(newSubAdmin);
@@ -649,17 +653,21 @@ const updateSubAdmin = async (req, res) => {
     try {
         if (req.user.role !== 'admin') return res.status(403).json({ message: 'Only Admins can manage Sub-Admins' });
         
-        const { assignedCities, status } = req.body;
+        const { assignedZones, status, password } = req.body;
         
         const subAdmin = await User.findOne({ _id: req.params.id, role: 'subadmin', assignedCities: { $in: req.user.assignedCities } });
         if (!subAdmin) return res.status(404).json({ message: 'Sub-Admin not found in your region' });
 
-        if (assignedCities) {
-            const isValidCities = assignedCities.every(city => req.user.assignedCities.map(c => c.toString()).includes(city));
-            if (!isValidCities) return res.status(403).json({ message: 'You can only assign cities that you manage.' });
-            subAdmin.assignedCities = assignedCities;
+        if (assignedZones !== undefined) {
+            subAdmin.assignedZones = assignedZones;
         }
         if (status) subAdmin.status = status;
+        
+        if (password) {
+            const bcrypt = require('bcryptjs');
+            const salt = await bcrypt.genSalt(10);
+            subAdmin.password = await bcrypt.hash(password, salt);
+        }
         
         await subAdmin.save();
         res.json(subAdmin);

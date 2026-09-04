@@ -123,6 +123,7 @@ const Login = () => {
                 const res = await fetch(`${API_URL}/users/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ email: formData.email, password: formData.password })
                 });
                 const data = await res.json();
@@ -133,7 +134,6 @@ const Login = () => {
                     else if (data.role === 'admin') navigate('/admin');
                     else if (data.role === 'subadmin') navigate('/subadmin');
                     else if (data.role === 'chef') navigate('/chef-dashboard');
-                    else if (data.role === 'delivery') navigate('/delivery-dashboard');
                     else navigate('/');
                 } else setError(data.message || 'Login failed');
 
@@ -168,6 +168,7 @@ const Login = () => {
                 const res = await fetch(`${API_URL}/users/verify-otp`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify(payload)
                 });
                 const data = await res.json();
@@ -178,7 +179,6 @@ const Login = () => {
                     else if (data.role === 'admin') navigate('/admin');
                     else if (data.role === 'subadmin') navigate('/subadmin');
                     else if (data.role === 'chef') navigate('/chef-dashboard');
-                    else if (data.role === 'delivery') navigate('/delivery-dashboard');
                     else navigate('/onboarding/location');
                 } else setError(data.message || 'Verification failed');
 
@@ -368,12 +368,6 @@ const Login = () => {
                                 <span style={{ color: 'var(--text-muted)' }}>Are you a home chef?</span>
                                 <Link to="/chef/register" style={{ color: 'var(--primary)', fontWeight: 'bold', textDecoration: 'none' }}>
                                     Join TasteNova →
-                                </Link>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ color: 'var(--text-muted)' }}>Delivery Partner?</span>
-                                <Link to="/delivery/register" style={{ color: 'var(--primary)', fontWeight: 'bold', textDecoration: 'none' }}>
-                                    Register →
                                 </Link>
                             </div>
                         </div>

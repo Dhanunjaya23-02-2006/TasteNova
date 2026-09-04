@@ -5,7 +5,7 @@ const userSchema = mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     phone: { type: String, required: true },
-    role: { type: String, enum: ['user', 'admin', 'subadmin', 'delivery', 'chef', 'superadmin'], default: 'user' },
+    role: { type: String, enum: ['user', 'admin', 'subadmin', 'chef', 'superadmin'], default: 'user' },
     status: { type: String, enum: ['pending', 'active', 'suspended'], default: 'active' },
     city: { type: mongoose.Schema.Types.ObjectId, ref: 'City' }, // Primary single city (Customers, Chefs, Delivery)
     assignedCities: [{ type: mongoose.Schema.Types.ObjectId, ref: 'City' }], // Array of cities for Admin Role
@@ -13,14 +13,7 @@ const userSchema = mongoose.Schema({
     customRole: { type: mongoose.Schema.Types.ObjectId, ref: 'Role' }, // For custom RBAC roles
     businessName: { type: String }, // For Chefs/Kitchens
     description: { type: String }, // For Chefs/Kitchens
-    vehicleType: { type: String }, // For Delivery Partners
-    vehicleNumber: { type: String }, // For Delivery Partners (e.g., TS09 AB 1234)
-    isOnline: { type: Boolean, default: false }, // For Delivery Partners / Chefs
-    todayOnlineHours: { type: Number, default: 0 }, // For Delivery Partners
-    currentLocation: {
-        lat: { type: Number },
-        lng: { type: Number }
-    }, // Real-time tracking for Delivery Partners
+    isOnline: { type: Boolean, default: false }, // For Chefs
     kitchenImage: { type: String }, // For Chefs/Kitchens
     profilePic: { type: String }, // General Profile Picture (Customers/Chefs)
     rating: { type: Number, default: 0 },
@@ -61,10 +54,7 @@ const userSchema = mongoose.Schema({
     otpExpires: { type: Date },
     documents: {
         idProof: { type: String },
-        fssaiCertificate: { type: String },
-        drivingLicence: { type: String },
-        vehicleRc: { type: String },
-        vehicleInsurance: { type: String }
+        fssaiCertificate: { type: String }
     },
     bankDetails: {
         accountName: { type: String },
@@ -112,7 +102,8 @@ const userSchema = mongoose.Schema({
     refreshTokens: [{ type: String }],
     
     // Social / Following
-    following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+    following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    favoriteDishes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }]
 }, { timestamps: true });
 
 // Add Geospatial Indexes

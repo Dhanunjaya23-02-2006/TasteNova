@@ -42,6 +42,11 @@ const ChefSettingsPage = () => {
     const [uploadingImage, setUploadingImage] = useState(false);
     const [uploadingDoc, setUploadingDoc] = useState(false);
 
+    // Password State
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+
     useEffect(() => {
         const fetchSettings = async () => {
             try {
@@ -184,7 +189,8 @@ const ChefSettingsPage = () => {
         'Delivery Settings',
         'Kitchen Information',
         'Documents',
-        'Bank Details'
+        'Bank Details',
+        'Security'
     ];
 
     const tabStyle = (isActive) => ({
@@ -460,11 +466,64 @@ const ChefSettingsPage = () => {
                         </div>
                     )}
 
-                    <div style={{ marginTop: '24px', borderTop: '1px solid var(--border-subtle)', paddingTop: '24px' }}>
-                        <button onClick={handleSave} className="btn btn-primary" style={{ width: '100%', padding: '14px', borderRadius: '8px', fontWeight: 600 }}>
-                            Save {activeTab} Settings
-                        </button>
-                    </div>
+                    {activeTab === 'Security' && (
+                        <div>
+                            <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0F3F26', margin: '0 0 8px 0' }}>Security</h2>
+                            <p style={{ color: 'var(--text-muted)', margin: '0 0 32px 0', fontSize: '0.9rem' }}>Manage your password.</p>
+
+                            <div>
+                                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F3F26' }}>Current Password</label>
+                                <input type="password" style={standardInputStyle} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="Enter current password" />
+                            </div>
+
+                            <div>
+                                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F3F26' }}>New Password</label>
+                                <input type="password" style={standardInputStyle} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Must contain uppercase, number, symbol" />
+                            </div>
+
+                            <div>
+                                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F3F26' }}>Confirm New Password</label>
+                                <input type="password" style={standardInputStyle} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter new password" />
+                            </div>
+                            
+                            <div style={{ marginTop: '24px', borderTop: '1px solid var(--border-subtle)', paddingTop: '24px' }}>
+                                <button onClick={async () => {
+                                    if (newPassword !== confirmPassword) {
+                                        return toast.error("Passwords don't match");
+                                    }
+                                    if (newPassword.length < 8 || !/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])/.test(newPassword)) {
+                                        return toast.error("Password must be 8+ chars with uppercase, lowercase, number & symbol.");
+                                    }
+                                    try {
+                                        const res = await fetch(`${API_URL}/users/change-password`, {
+                                            method: 'PUT',
+                                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` },
+                                            body: JSON.stringify({ currentPassword, newPassword })
+                                        });
+                                        const data = await res.json();
+                                        if (res.ok) {
+                                            toast.success('Password updated successfully');
+                                            setCurrentPassword('');
+                                            setNewPassword('');
+                                            setConfirmPassword('');
+                                        } else {
+                                            toast.error(data.message || 'Failed to update password');
+                                        }
+                                    } catch (e) { toast.error('Error updating password'); }
+                                }} className="btn btn-primary" style={{ width: '100%', padding: '14px', borderRadius: '8px', fontWeight: 600 }}>
+                                    Change Password
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab !== 'Security' && (
+                        <div style={{ marginTop: '24px', borderTop: '1px solid var(--border-subtle)', paddingTop: '24px' }}>
+                            <button onClick={handleSave} className="btn btn-primary" style={{ width: '100%', padding: '14px', borderRadius: '8px', fontWeight: 600 }}>
+                                Save {activeTab} Settings
+                            </button>
+                        </div>
+                    )}
 
                 </div>
             </div>

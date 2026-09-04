@@ -4,13 +4,13 @@ const User = require('../models/User');
 const protect = async (req, res, next) => {
     let token;
 
-    // Check for token in cookies first (Web)
-    if (req.cookies && req.cookies.jwt) {
-        token = req.cookies.jwt;
-    } 
-    // Fallback to Bearer token in header (Mobile or legacy)
-    else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    // Check for Bearer token in header first (most reliable for cross-origin)
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         token = req.headers.authorization.split(' ')[1];
+    }
+    // Fallback to cookie (same-origin or production)
+    else if (req.cookies && req.cookies.jwt) {
+        token = req.cookies.jwt;
     }
 
     if (!token) {

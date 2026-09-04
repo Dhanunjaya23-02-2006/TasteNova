@@ -13,7 +13,6 @@ const mainNav = [
     { to: '/subadmin', label: 'Dashboard', icon: LayoutDashboard, end: true },
     { to: '/subadmin/orders', label: 'Orders', icon: ShoppingBag },
     { to: '/subadmin/chefs', label: 'Chefs', icon: ChefHat },
-    { to: '/subadmin/delivery', label: 'Delivery', icon: Truck },
     { to: '/subadmin/promotions', label: 'Promotions', icon: Tag },
 ];
 

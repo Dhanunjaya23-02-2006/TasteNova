@@ -17,16 +17,30 @@ const ChefProfilePage = () => {
     });
 
     useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const res = await fetch(`${API_URL}/users/profile`, {
+                    headers: { Authorization: `Bearer ${user.token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setForm({
+                        name: data.name || '',
+                        businessName: data.businessName || '',
+                        description: data.description || '',
+                        phone: data.phone || '',
+                        profilePic: data.profilePic || '',
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching profile:', error);
+            }
+        };
+
         if (user) {
-            setForm({
-                name: user.name || '',
-                businessName: user.businessName || '',
-                description: user.description || '',
-                phone: user.phone || '',
-                profilePic: user.profilePic || '',
-            });
+            fetchProfile();
         }
-    }, [user]);
+    }, [user?.token]);
 
     const [reviews, setReviews] = useState([]);
 

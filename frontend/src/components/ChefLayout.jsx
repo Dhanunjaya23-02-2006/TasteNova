@@ -8,7 +8,7 @@ import {
     Home as HomeIcon, MoreHorizontal, Star, ShieldCheck, BarChart3, Megaphone, Ticket, TrendingUp
 } from 'lucide-react';
 import { API_URL } from '../config';
-import { io } from 'socket.io-client';
+import { SocketContext } from '../context/SocketContext';
 
 const sidebarGroups = [
     {
@@ -64,6 +64,7 @@ const ChefLayout = () => {
         return () => document.body.classList.remove('has-mobile-bottom-nav');
     }, []);
     const { user, logout } = useContext(AuthContext);
+    const { socket } = useContext(SocketContext);
     const navigate = useNavigate();
     const location = useLocation();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -114,19 +115,17 @@ const ChefLayout = () => {
     };
 
     useEffect(() => {
-        if (!user) return;
+        if (!user || !socket) return;
         fetchNotifications();
-
-        const socket = io(API_URL.replace('/api', ''), {
-            auth: { token: user.token }
-        });
 
         socket.emit('join_chef', user._id);
 
-        socket.on('new_notification', (notification) => {
+        const handleNewNotification = (notification) => {
             setNotifications(prev => [notification, ...prev]);
             setUnreadCount(prev => prev + 1);
-        });
+        };
+
+        socket.on('new_notification', handleNewNotification);
 
         // Listen for kitchen status changes from the dashboard
         const handleKitchenStatusChange = (e) => {
@@ -135,10 +134,10 @@ const ChefLayout = () => {
         window.addEventListener('kitchenStatusChanged', handleKitchenStatusChange);
 
         return () => {
-            socket.disconnect();
+            socket.off('new_notification', handleNewNotification);
             window.removeEventListener('kitchenStatusChanged', handleKitchenStatusChange);
         };
-    }, [user]);
+    }, [user, socket]);
 
     useEffect(() => {
         const handler = (e) => {

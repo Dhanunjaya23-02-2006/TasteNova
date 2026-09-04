@@ -114,7 +114,11 @@ const deleteZone = async (req, res) => {
 // ========================
 const getSubAdmins = async (req, res) => {
     try {
-        const subAdmins = await User.find({ role: 'subadmin', ...req.cityFilter })
+        const adminCities = req.user.assignedCities || [];
+        const subAdmins = await User.find({ 
+            role: 'subadmin', 
+            assignedCities: { $in: adminCities } 
+        })
             .populate('assignedZones', 'name')
             .select('-password');
         res.json(subAdmins);
@@ -130,11 +134,15 @@ const createSubAdmin = async (req, res) => {
         // Inherit the regional admin's city (or primary assigned city)
         const city = req.user.assignedCities?.length > 0 ? req.user.assignedCities[0] : req.user.city;
         
+        const bcrypt = require('bcryptjs');
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
         const subAdmin = new User({
-            name, email, password, phone,
+            name, email, password: hashedPassword, phone,
             role: 'subadmin',
             city, // Scope them to this city
-            assignedCities: [city], // Scope them to this city
+            assignedCities: req.user.assignedCities, // Scope them to this admin's cities
             assignedZones // Specific zones in the city
         });
 
@@ -148,15 +156,32 @@ const createSubAdmin = async (req, res) => {
 
 const updateSubAdmin = async (req, res) => {
     try {
-        const subAdmin = await User.findOneAndUpdate(
-            { _id: req.params.id, role: 'subadmin', ...req.cityFilter },
-            req.body,
-            { new: true }
-        ).select('-password');
-        
+        const adminCities = req.user.assignedCities || [];
+        const subAdmin = await User.findOne({ _id: req.params.id, role: 'subadmin', assignedCities: { $in: adminCities } });
         if (!subAdmin) return res.status(404).json({ message: 'Subadmin not found' });
+        
+        const { assignedZones, status, password, name, phone, email } = req.body;
+        
+        if (name) subAdmin.name = name;
+        if (phone) subAdmin.phone = phone;
+        if (email) subAdmin.email = email;
+        if (assignedZones !== undefined) subAdmin.assignedZones = assignedZones;
+        if (status) subAdmin.status = status;
+        
+        if (password) {
+            const bcrypt = require('bcryptjs');
+            const salt = await bcrypt.genSalt(10);
+            subAdmin.password = await bcrypt.hash(password, salt);
+        }
+
+        await subAdmin.save();
         if (req.app.get('io')) req.app.get('io').emit('admin_refresh');
-        res.json(subAdmin);
+        
+        // Don't send back password
+        const subAdminObj = subAdmin.toObject();
+        delete subAdminObj.password;
+        
+        res.json(subAdminObj);
     } catch (error) {
         res.status(400).json({ message: 'Error updating subadmin', error: error.message });
     }

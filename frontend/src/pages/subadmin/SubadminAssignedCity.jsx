@@ -94,7 +94,6 @@ const SubadminAssignedCity = () => {
                                         {[
                                             { label: 'Chefs', value: stats.totalChefs || 0, icon: ChefHat },
                                             { label: 'Customers', value: stats.totalCustomers || 0, icon: Users },
-                                            { label: 'Delivery', value: stats.totalDelivery || 0, icon: Truck },
                                             { label: 'Orders Today', value: stats.todayOrders || 0, icon: ShoppingBag },
                                         ].map((s, i) => (
                                             <div key={i} style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
@@ -107,30 +106,7 @@ const SubadminAssignedCity = () => {
                                 )}
                             </div>
 
-                            {/* Delivery Configuration */}
-                            <div className="sa-card" style={{ marginBottom: '24px' }}>
-                                <h3 style={{ fontSize: '1.1rem', marginBottom: '20px', fontFamily: "'DM Serif Display', serif", display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <Truck size={20} style={{ color: 'var(--primary)' }} /> Delivery Configuration
-                                </h3>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-                                    <div style={{ padding: '16px', background: 'var(--bg-dark)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: '4px' }}>Delivery Radius</div>
-                                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--primary)' }}>{city.deliveryRadius || 10} km</div>
-                                    </div>
-                                    <div style={{ padding: '16px', background: 'var(--bg-dark)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: '4px' }}>Base Delivery Fee</div>
-                                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--primary)' }}>₹{city.baseDeliveryFee || 40}</div>
-                                    </div>
-                                    <div style={{ padding: '16px', background: 'var(--bg-dark)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: '4px' }}>Per Km Fee</div>
-                                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--primary)' }}>₹{city.perKmFee || 10}/km</div>
-                                    </div>
-                                    <div style={{ padding: '16px', background: 'var(--bg-dark)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: '4px' }}>Free Delivery Above</div>
-                                        <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--primary)' }}>₹{city.freeDeliveryThreshold || 500}</div>
-                                    </div>
-                                </div>
-                            </div>
+
 
                             {/* Financial Settings */}
                             <div className="sa-card" style={{ marginBottom: '24px' }}>

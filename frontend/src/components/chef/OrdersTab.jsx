@@ -28,7 +28,6 @@ const OrdersTab = ({ orders, orderFilter, setOrderFilter, fetchOrders, handleUpd
         'Accepted': { bg: 'rgba(39,174,96,0.1)', text: '#27ae60' },
         'Preparing': { bg: 'rgba(230,126,34,0.1)', text: '#e67e22' },
         'Ready': { bg: 'rgba(52,152,219,0.1)', text: '#3498db' },
-        'Out for Delivery': { bg: 'rgba(52,152,219,0.1)', text: '#3498db' },
         'Delivered': { bg: 'rgba(39,174,96,0.1)', text: '#27ae60' },
         'Completed': { bg: 'rgba(39,174,96,0.1)', text: '#27ae60' },
         'Rejected': { bg: 'rgba(231,76,60,0.1)', text: '#e74c3c' }

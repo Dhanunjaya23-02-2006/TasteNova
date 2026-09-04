@@ -74,8 +74,7 @@ const SuperadminOrders = () => {
                     <option value="Accepted">Accepted</option>
                     <option value="Preparing">Preparing</option>
                     <option value="Ready">Ready</option>
-                    <option value="Out for Delivery">Out for Delivery</option>
-                    <option value="Delivered">Delivered</option>
+                    <option value="Completed">Completed</option>
                     <option value="Cancelled">Cancelled</option>
                 </select>
                 <button className="sa-btn-outline"><Filter size={16} /> Filters</button>

@@ -86,7 +86,7 @@ const addOrderItems = async (req, res) => {
 // @route   GET /api/orders/:id
 // @access  Private
 const getOrderById = async (req, res) => {
-    const order = await Order.findById(req.params.id).populate('user', 'name email').populate('deliveryPartner', 'name phone');
+    const order = await Order.findById(req.params.id).populate('user', 'name email');
 
     if (order) {
         res.json(order);
@@ -110,7 +110,7 @@ const updateOrderToPaid = async (req, res) => {
             update_time: req.body.update_time,
         };
         // Set initial profit (if no partner payout is done immediately)
-        order.profit = (order.itemsPrice + order.platformFee + order.deliveryCharge) - order.ingredientTotalCost - order.deliveryPartnerPayout;
+        order.profit = (order.itemsPrice + order.platformFee + order.deliveryCharge) - order.ingredientTotalCost;
 
         if (order.orderType === 'Subscription') {
             order.status = 'Accepted';
@@ -212,11 +212,7 @@ const updateOrderStatus = async (req, res) => {
         }
 
         order.status = req.body.status || order.status;
-        order.deliveryStatus = req.body.deliveryStatus || order.deliveryStatus;
-        if (req.body.deliveryPartner) {
-            order.deliveryPartner = req.body.deliveryPartner;
-            order.deliveryStatus = 'Assigned'; // Force assigned if admin picks partner
-        }
+        
 
         const updatedOrder = await order.save();
 
@@ -225,7 +221,7 @@ const updateOrderStatus = async (req, res) => {
             io.to('chef_' + updatedOrder.chef).emit('order_status_update', updatedOrder);
         }
 
-        if (updatedOrder.status === 'Completed' || updatedOrder.deliveryStatus === 'Delivered') {
+        if (updatedOrder.status === 'Completed') {
             await processOrderPayout(updatedOrder);
 
             // Handle Referral Fulfillment for first order
@@ -258,9 +254,7 @@ const updateOrderStatus = async (req, res) => {
         if (io) {
             io.emit('order_status_update', updatedOrder);
             io.emit('admin_refresh');
-            if (updatedOrder.status === 'Ready' && updatedOrder.deliveryStatus === 'Pending') {
-                io.to('delivery_partners').emit('new_delivery_request', updatedOrder);
-            }
+            
         }
 
         res.json(updatedOrder);
@@ -269,89 +263,7 @@ const updateOrderStatus = async (req, res) => {
     }
 };
 
-// @desc    Get orders for delivery partner (or all open orders)
-// @route   GET /api/orders/deliveryorders
-// @access  Private/Delivery
-const getAssignedOrders = async (req, res) => {
-    const query = {
-        $or: [
-            { deliveryPartner: req.user._id, status: { $ne: 'Completed' } },
-            { deliveryStatus: 'Pending', status: 'Ready' }
-        ]
-    };
 
-    const features = new APIFeatures(
-        Order.find(query).populate('user', 'name phone').populate('deliveryPartner', 'name'),
-        req.query
-    )
-        .filter()
-        .sort()
-        .limitFields()
-        .paginate();
-
-    await sendPaginatedResponse(res, features, Order);
-};
-
-// @desc    Accept/Reject/Update delivery status
-// @route   PUT /api/orders/:id/deliverystatus
-// @access  Private/Delivery
-const updateDeliveryStatus = async (req, res) => {
-    const order = await Order.findById(req.params.id);
-
-    if (order) {
-        if (req.body.action === 'accept') {
-            order.deliveryPartner = req.user._id;
-            order.deliveryStatus = 'Assigned';
-        } else if (req.body.action === 'reject') {
-            // Can only reject if they accepted it themselves, but wait, criteria says "if admin assigned no reject"
-            // Let's assume they only reject if they want to un-assign. If admin assigned them, reject logic shouldn't happen, but we can prevent it in frontend
-            order.deliveryPartner = null;
-            order.deliveryStatus = 'Pending';
-        } else {
-            // Update to Picked Up, Delivered
-            order.deliveryStatus = req.body.deliveryStatus || order.deliveryStatus;
-
-            // Auto complete order if delivered
-            if (order.deliveryStatus === 'Delivered') {
-                order.status = 'Completed';
-            }
-        }
-
-        const updatedOrder = await order.save();
-        res.json(updatedOrder);
-    } else {
-        res.status(404).json({ message: 'Order not found' });
-    }
-};
-
-// @desc    Get delivery partner earnings
-// @route   GET /api/orders/deliveryearnings
-// @access  Private/Delivery
-const getDeliveryEarnings = async (req, res) => {
-    const orders = await Order.find({
-        deliveryPartner: req.user._id,
-        deliveryStatus: 'Delivered'
-    });
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    let todayEarnings = 0;
-    let previousEarnings = 0;
-
-    orders.forEach(order => {
-        // If deliveryPartnerPayout is not set, we default their earning to the deliveryCharge
-        const earning = order.deliveryPartnerPayout > 0 ? order.deliveryPartnerPayout : order.deliveryCharge;
-
-        if (new Date(order.updatedAt) >= today) {
-            todayEarnings += earning;
-        } else {
-            previousEarnings += earning;
-        }
-    });
-
-    res.json({ todayEarnings, previousEarnings });
-};
 
 // @desc    Process refund logic
 // @route   PUT /api/orders/:id/refund
@@ -408,12 +320,12 @@ const getChefStats = async (req, res) => {
         const todayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === today);
         
         const todayEarnings = todayOrders.reduce((sum, o) => {
-            return sum + (['Ready', 'Delivered', 'Completed', 'Out for Delivery'].includes(o.status) ? o.totalPrice : 0);
+            return sum + (['Ready', 'Completed'].includes(o.status) ? o.totalPrice : 0);
         }, 0);
         
         const activeOrders = orders.filter(o => ['Placed', 'Accepted', 'Preparing'].includes(o.status)).length;
         
-        const completedOrders = orders.filter(o => ['Ready', 'Delivered', 'Completed', 'Out for Delivery'].includes(o.status));
+        const completedOrders = orders.filter(o => ['Ready', 'Completed'].includes(o.status));
         const totalEarnings = completedOrders.reduce((sum, o) => sum + o.totalPrice, 0);
         
         const upcomingScheduled = orders.filter(o => o.orderType !== 'Instant' && ['Placed', 'Accepted'].includes(o.status)).length;
@@ -483,7 +395,7 @@ const getChefStats = async (req, res) => {
             }
 
             // Trend Data for Completed/Delivered orders
-            if (['Ready', 'Delivered', 'Completed', 'Out for Delivery'].includes(o.status)) {
+            if (['Ready', 'Completed'].includes(o.status)) {
                 const dayName = daysOfWeek[orderDate.getDay()];
                 
                 if (orderDate >= sevenDaysAgo && orderDate < new Date(startOfToday.getTime() + 86400000)) {
@@ -594,7 +506,7 @@ const getChefStats = async (req, res) => {
         res.json({
             todayEarnings,
             todayOrders: todayOrders.length,
-            ordersCompletedToday: todayOrders.filter(o => ['Ready', 'Delivered', 'Completed', 'Out for Delivery'].includes(o.status)).length,
+            ordersCompletedToday: todayOrders.filter(o => ['Ready', 'Completed'].includes(o.status)).length,
             activeOrders,
             pendingBookings,
             upcomingBookingsList,
@@ -633,9 +545,6 @@ module.exports = {
     getMyOrders,
     getOrders,
     updateOrderStatus,
-    getAssignedOrders,
-    updateDeliveryStatus,
-    getDeliveryEarnings,
     processRefund,
     getChefStats
 };

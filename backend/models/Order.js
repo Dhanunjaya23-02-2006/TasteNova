@@ -25,24 +25,16 @@ const orderSchema = mongoose.Schema({
     platformFee: { type: Number, required: true, default: 0.0 },
     deliveryCharge: { type: Number, required: true, default: 0.0 },
     totalPrice: { type: Number, required: true, default: 0.0 },
-    profit: { type: Number, default: 0.0 }, // Profit = (Food Total + Platform Fee + Delivery Charge) − Ingredient Cost − Delivery Partner Payout
+    profit: { type: Number, default: 0.0 }, // Profit = (Food Total + Platform Fee + Delivery Charge) − Ingredient Cost
 
     isPaid: { type: Boolean, required: true, default: false },
     paidAt: { type: Date },
 
     status: {
         type: String,
-        enum: ['Placed', 'Accepted', 'Preparing', 'Ready', 'Out for Delivery', 'Completed', 'Rejected'],
+        enum: ['Placed', 'Accepted', 'Preparing', 'Ready', 'Completed', 'Rejected'],
         default: 'Placed'
     },
-    deliveryStatus: {
-        type: String,
-        enum: ['Pending', 'Assigned', 'Arrived At Chef', 'Picked Up', 'Arrived At Customer', 'Delivered'],
-        default: 'Pending'
-    },
-    deliveryPartner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    deliveryPartnerPayout: { type: Number, default: 0.0 },
-    payoutStatus: { type: String, enum: ['Pending', 'Paid'], default: 'Pending' },
     chef: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     chefPayout: { type: Number, default: 0.0 },
     chefPayoutStatus: { type: String, enum: ['Pending', 'Paid'], default: 'Pending' },
@@ -81,7 +73,6 @@ const orderSchema = mongoose.Schema({
 // Compound Indexes for fast querying
 orderSchema.index({ user: 1, createdAt: -1 }); // Fast user order history
 orderSchema.index({ chef: 1, status: 1, createdAt: -1 }); // Fast chef active orders
-orderSchema.index({ deliveryPartner: 1, deliveryStatus: 1 }); // Fast delivery partner active orders
 orderSchema.index({ city: 1, createdAt: -1 }); // Fast admin city-level queries
 
 module.exports = mongoose.model('Order', orderSchema);

@@ -9,7 +9,6 @@ import SubadminLayout from './components/SubadminLayout';
 import AdminLayout from './components/AdminLayout';
 import SuperadminLayout from './components/SuperadminLayout';
 import ChefLayout from './components/ChefLayout';
-import DeliveryLayout from './components/DeliveryLayout';
 
 // Lazy loaded pages
 const Home = React.lazy(() => import('./pages/public/Home'));
@@ -20,15 +19,6 @@ const TrackOrder = React.lazy(() => import('./pages/customer/TrackOrder'));
 const ChefMenu = React.lazy(() => import('./pages/chef/ChefMenu'));
 const Menu = React.lazy(() => import('./pages/customer/Menu'));
 
-// Delivery Dashboard Pages
-const DeliveryDashboardPage = React.lazy(() => import('./pages/delivery/DeliveryDashboardPage'));
-const DeliveryOrdersPage = React.lazy(() => import('./pages/delivery/DeliveryOrdersPage'));
-const DeliveryEarningsPage = React.lazy(() => import('./pages/delivery/DeliveryEarningsPage'));
-const DeliveryProfilePage = React.lazy(() => import('./pages/delivery/DeliveryProfilePage'));
-const DeliveryNotificationsPage = React.lazy(() => import('./pages/delivery/DeliveryNotificationsPage'));
-const DeliverySupportPage = React.lazy(() => import('./pages/delivery/DeliverySupportPage'));
-const DeliveryDocumentsPage = React.lazy(() => import('./pages/delivery/DeliveryDocumentsPage'));
-const DeliveryIncentivesPage = React.lazy(() => import('./pages/delivery/DeliveryIncentivesPage'));
 
 // Static & Registration Pages
 const HowItWorks = React.lazy(() => import('./pages/public/HowItWorks'));
@@ -36,7 +26,6 @@ const ForChefs = React.lazy(() => import('./pages/public/ForChefs'));
 const Cities = React.lazy(() => import('./pages/public/Cities'));
 const AboutUs = React.lazy(() => import('./pages/public/AboutUs'));
 const ChefRegister = React.lazy(() => import('./pages/chef/ChefRegister'));
-const DeliveryRegister = React.lazy(() => import('./pages/delivery/DeliveryRegister'));
 const LocationOnboarding = React.lazy(() => import('./pages/public/LocationOnboarding'));
 
 // Public Browsing Pages
@@ -68,7 +57,6 @@ const ChefMarketingPage = React.lazy(() => import('./pages/chef/ChefMarketingPag
 const SubadminDashboard = React.lazy(() => import('./pages/subadmin/SubadminDashboard'));
 const SubadminOrders = React.lazy(() => import('./pages/subadmin/SubadminOrders'));
 const SubadminChefs = React.lazy(() => import('./pages/subadmin/SubadminChefs'));
-const SubadminDelivery = React.lazy(() => import('./pages/subadmin/SubadminDelivery'));
 const SubadminCustomers = React.lazy(() => import('./pages/subadmin/SubadminCustomers'));
 const SubadminPromotions = React.lazy(() => import('./pages/subadmin/SubadminPromotions'));
 const SubadminBanners = React.lazy(() => import('./pages/subadmin/SubadminBanners'));
@@ -84,7 +72,6 @@ const SubadminPermissions = React.lazy(() => import('./pages/subadmin/SubadminPe
 const AdminDashboard = React.lazy(() => import('./pages/admin/AdminDashboard'));
 const AdminOrders = React.lazy(() => import('./pages/admin/AdminOrders'));
 const AdminChefs = React.lazy(() => import('./pages/admin/AdminChefs'));
-const AdminDelivery = React.lazy(() => import('./pages/admin/AdminDelivery'));
 const AdminCustomers = React.lazy(() => import('./pages/admin/AdminCustomers'));
 const AdminPromotions = React.lazy(() => import('./pages/admin/AdminPromotions'));
 const AdminBanners = React.lazy(() => import('./pages/admin/AdminBanners'));
@@ -107,7 +94,6 @@ const SuperadminVerification = React.lazy(() => import('./pages/superadmin/Super
 const SuperadminAuditLogs = React.lazy(() => import('./pages/superadmin/SuperadminAuditLogs'));
 const SuperadminOrders = React.lazy(() => import('./pages/superadmin/SuperadminOrders'));
 const SuperadminChefs = React.lazy(() => import('./pages/superadmin/SuperadminChefs'));
-const SuperadminDelivery = React.lazy(() => import('./pages/superadmin/SuperadminDelivery'));
 const SuperadminCustomers = React.lazy(() => import('./pages/superadmin/SuperadminCustomers'));
 const SuperadminSupport = React.lazy(() => import('./pages/superadmin/SuperadminSupport'));
 // Phase 2 Superadmin Pages
@@ -147,7 +133,6 @@ const CustomerOnly = ({ children }) => {
     if (user.role === 'admin') return <Navigate to="/admin" replace />;
     if (user.role === 'superadmin') return <Navigate to="/superadmin" replace />;
     if (user.role === 'chef') return <Navigate to="/chef/dashboard" replace />;
-    if (user.role === 'delivery') return <Navigate to="/delivery-dashboard" replace />;
   }
   return <PageWrapper>{children}</PageWrapper>;
 };
@@ -160,7 +145,6 @@ const ProtectedRoute = ({ children }) => {
   if (user.role === 'admin') return <Navigate to="/admin" replace />;
   if (user.role === 'superadmin') return <Navigate to="/superadmin" replace />;
   if (user.role === 'chef') return <Navigate to="/chef/dashboard" replace />;
-  if (user.role === 'delivery') return <Navigate to="/delivery-dashboard" replace />;
   
   return <PageWrapper>{children}</PageWrapper>;
 };
@@ -171,8 +155,7 @@ function App() {
   const isAdmin = location.pathname.startsWith('/admin');
   const isSuperadmin = location.pathname.startsWith('/superadmin');
   const isChef = location.pathname.startsWith('/chef') && !location.pathname.startsWith('/chef/register') && location.pathname !== '/chefs';
-  const isDelivery = location.pathname.startsWith('/delivery') && !location.pathname.startsWith('/delivery/register');
-  const hideGlobalNav = isSubadmin || isAdmin || isSuperadmin || isChef || isDelivery;
+  const hideGlobalNav = isSubadmin || isAdmin || isSuperadmin || isChef;
   
   // Use a base key for dashboards to prevent unmounting the entire layout on sub-route changes
   const routesKey = hideGlobalNav ? location.pathname.split('/')[1] : location.pathname;
@@ -205,7 +188,6 @@ function App() {
               <Route path="/verify-otp" element={<PageWrapper><Login /></PageWrapper>} />
               <Route path="/forgot-password" element={<PageWrapper><Login /></PageWrapper>} />
               <Route path="/chef/register" element={<PageWrapper><ChefRegister /></PageWrapper>} />
-              <Route path="/delivery/register" element={<PageWrapper><DeliveryRegister /></PageWrapper>} />
               <Route path="/onboarding/location" element={<PageWrapper><LocationOnboarding /></PageWrapper>} />
               
               <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
@@ -240,19 +222,6 @@ function App() {
               </Route>
 
               {/* Other Dashboards */}
-              {/* Delivery Routes */}
-              <Route path="/delivery-dashboard" element={<Navigate to="/delivery/dashboard" replace />} />
-              <Route path="/delivery" element={<DeliveryLayout />}>
-                <Route index element={<Navigate to="dashboard" replace />} />
-                <Route path="dashboard" element={<DeliveryDashboardPage />} />
-                <Route path="orders" element={<DeliveryOrdersPage />} />
-                <Route path="earnings" element={<DeliveryEarningsPage />} />
-                <Route path="profile" element={<DeliveryProfilePage />} />
-                <Route path="notifications" element={<DeliveryNotificationsPage />} />
-                <Route path="documents" element={<DeliveryDocumentsPage />} />
-                <Route path="support" element={<DeliverySupportPage />} />
-                <Route path="incentives" element={<DeliveryIncentivesPage />} />
-              </Route>
               
               {/* Subadmin Routes */}
 
@@ -261,7 +230,6 @@ function App() {
               <Route index element={<SubadminDashboard />} />
               <Route path="orders" element={<SubadminOrders />} />
               <Route path="chefs" element={<SubadminChefs />} />
-              <Route path="delivery" element={<SubadminDelivery />} />
               <Route path="customers" element={<SubadminCustomers />} />
               <Route path="promotions" element={<SubadminPromotions />} />
               <Route path="banners" element={<SubadminBanners />} />
@@ -281,7 +249,6 @@ function App() {
               <Route path="subadmins" element={<AdminSubAdmins />} />
               <Route path="orders" element={<AdminOrders />} />
               <Route path="chefs" element={<AdminChefs />} />
-              <Route path="delivery" element={<AdminDelivery />} />
               <Route path="customers" element={<AdminCustomers />} />
               <Route path="promotions" element={<AdminPromotions />} />
               <Route path="banners" element={<AdminBanners />} />
@@ -306,7 +273,6 @@ function App() {
                 {/* Operations & Admin Phase 2 */}
                 <Route path="orders" element={<SuperadminOrders />} />
                 <Route path="chefs" element={<SuperadminChefs />} />
-                <Route path="delivery" element={<SuperadminDelivery />} />
                 <Route path="customers" element={<SuperadminCustomers />} />
                 <Route path="support" element={<SuperadminSupport />} />
                 

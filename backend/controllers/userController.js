@@ -327,14 +327,14 @@ const updateUserProfile = async (req, res) => {
         const user = await User.findById(req.user._id);
 
         if (user) {
-            user.name = req.body.name || user.name;
-            user.phone = req.body.phone || user.phone;
+            if (req.body.name !== undefined) user.name = req.body.name;
+            if (req.body.phone !== undefined) user.phone = req.body.phone;
             if (req.body.role && ['user', 'chef', 'delivery'].includes(req.body.role)) {
                 user.role = req.body.role;
             }
-            user.businessName = req.body.businessName || user.businessName;
-            user.description = req.body.description || user.description;
-            user.kitchenImage = req.body.kitchenImage || user.kitchenImage;
+            if (req.body.businessName !== undefined) user.businessName = req.body.businessName;
+            if (req.body.description !== undefined) user.description = req.body.description;
+            if (req.body.kitchenImage !== undefined) user.kitchenImage = req.body.kitchenImage;
             if (req.body.profilePic !== undefined) {
                 user.profilePic = req.body.profilePic;
             }
@@ -731,7 +731,50 @@ const toggleFollowChef = async (req, res) => {
         }
 
         await user.save();
+        
+        const io = req.app.get('io');
+        if (io) {
+            io.to('user_' + user._id.toString()).emit('favorites_updated', { type: 'chef' });
+        }
+
         res.json({ message: isFollowing ? 'Unfollowed successfully' : 'Followed successfully', following: user.following });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const toggleFavoriteDish = async (req, res) => {
+    try {
+        const dishId = req.params.id;
+        const user = await User.findById(req.user._id);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const MenuItem = require('../models/MenuItem');
+        const dish = await MenuItem.findById(dishId);
+        if (!dish) {
+            return res.status(404).json({ message: 'Dish not found' });
+        }
+
+        const isFavorite = user.favoriteDishes && user.favoriteDishes.includes(dishId);
+
+        if (isFavorite) {
+            user.favoriteDishes = user.favoriteDishes.filter(id => id.toString() !== dishId);
+        } else {
+            if (!user.favoriteDishes) user.favoriteDishes = [];
+            user.favoriteDishes.push(dishId);
+        }
+
+        await user.save();
+        
+        const io = req.app.get('io');
+        if (io) {
+            io.to('user_' + user._id.toString()).emit('favorites_updated', { type: 'dish' });
+        }
+
+        res.json({ message: isFavorite ? 'Removed from favorites' : 'Added to favorites', favoriteDishes: user.favoriteDishes });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -928,11 +971,16 @@ const deletePaymentMethod = async (req, res) => {
 // @access  Private
 const getUserFavourites = async (req, res) => {
     try {
-        const user = await User.findById(req.user._id).populate('following', 'name kitchenName profileImage rating');
+        const user = await User.findById(req.user._id)
+            .populate('following', 'name businessName profileImage rating numReviews kitchenImage')
+            .populate('favoriteDishes', 'name description price image rating numReviews');
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        res.json(user.following || []);
+        res.json({
+            chefs: user.following || [],
+            dishes: user.favoriteDishes || []
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -1030,6 +1078,7 @@ module.exports = {
     getAllChefs,
     getChefById,
     toggleFollowChef,
+    toggleFavoriteDish,
     updateChefSettings,
     addAddress,
     deleteAddress,

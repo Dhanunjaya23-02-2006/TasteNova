@@ -3,29 +3,35 @@ import { AuthContext } from '../../context/AuthContext';
 import { API_URL } from '../../config';
 import toast from 'react-hot-toast';
 import OrdersTab from '../../components/chef/OrdersTab';
-import io from 'socket.io-client';
+import { SocketContext } from '../../context/SocketContext';
 
 const ChefOrdersPage = () => {
     const { user } = useContext(AuthContext);
+    const { socket } = useContext(SocketContext);
     const [orders, setOrders] = useState([]);
     const [orderFilter, setOrderFilter] = useState('Instant');
 
     useEffect(() => { 
         fetchOrders(); 
         
-        if (user) {
-            const socket = io(API_URL.replace('/api', ''));
-            socket.emit('join_chef', user._id);
-            socket.on('new_order_alert', () => {
+        if (socket) {
+            const handleNewOrder = () => {
                 toast.success('NEW ORDER RECEIVED!', { icon: '🔔' });
                 fetchOrders();
-            });
-            socket.on('order_status_update', () => {
+            };
+            const handleStatusUpdate = () => {
                 fetchOrders();
-            });
-            return () => socket.disconnect();
+            };
+
+            socket.on('new_order_alert', handleNewOrder);
+            socket.on('order_status_update', handleStatusUpdate);
+
+            return () => {
+                socket.off('new_order_alert', handleNewOrder);
+                socket.off('order_status_update', handleStatusUpdate);
+            };
         }
-    }, [user]);
+    }, [socket]);
 
     const fetchOrders = async () => {
         try {

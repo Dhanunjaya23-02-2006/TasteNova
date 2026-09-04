@@ -147,6 +147,7 @@ const getSubAdmins = async (req, res) => {
     try {
         const subAdmins = await User.find({ role: { $in: ['subadmin', 'admin'] } })
             .populate('assignedCities', 'name')
+            .populate('assignedZones', 'name')
             .populate('customRole', 'name type');
         res.json(subAdmins);
     } catch (error) {

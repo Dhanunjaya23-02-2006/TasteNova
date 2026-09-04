@@ -94,9 +94,9 @@ const SuperadminDashboard = () => {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle size={16} color="var(--primary)" /> <span>Ready for Pickup</span></div>
                             <span style={{ fontWeight: 600 }}>{liveOperations.Ready}</span>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '12px', borderBottom: '1px solid var(--border-subtle)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Truck size={16} color="#E89B2C" /> <span>Out for Delivery</span></div>
-                            <span style={{ fontWeight: 600 }}>{liveOperations.Delivery}</span>
+                        <div className="sa-live-stat">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><CheckCircle size={16} color="#27AE60" /> <span>Completed</span></div>
+                            <span style={{ fontWeight: 600 }}>{liveOperations.Completed}</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><XCircle size={16} color="var(--error)" /> <span>Placed (Waiting Accept)</span></div>
@@ -117,19 +117,13 @@ const SuperadminDashboard = () => {
                                 <div><strong>{alerts.pendingChefs} chef applications</strong> waiting for verification</div>
                             </div>
                         )}
-                        {alerts.pendingDelivery > 0 && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#FFF3CD', borderRadius: '8px', color: '#856404' }}>
-                                <AlertTriangle size={20} />
-                                <div><strong>{alerts.pendingDelivery} delivery partner</strong> documents waiting</div>
-                            </div>
-                        )}
                         {alerts.escalatedRefunds > 0 && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#F8D7DA', borderRadius: '8px', color: 'var(--error)' }}>
                                 <AlertTriangle size={20} />
                                 <div><strong>{alerts.escalatedRefunds} refund requests</strong> require Super Admin approval</div>
                             </div>
                         )}
-                        {alerts.pendingChefs === 0 && alerts.pendingDelivery === 0 && alerts.escalatedRefunds === 0 && (
+                        {alerts.pendingChefs === 0 && alerts.escalatedRefunds === 0 && (
                             <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
                                 All queues are clear. No active alerts.
                             </div>

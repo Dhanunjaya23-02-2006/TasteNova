@@ -16,16 +16,16 @@ const setAuthCookies = (res, accessToken, refreshToken) => {
     res.cookie('jwt', accessToken, {
         httpOnly: true,
         secure: isProd,
-        sameSite: 'strict',
-        maxAge: 15 * 60 * 1000, // 15 mins
+        sameSite: isProd ? 'strict' : 'lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days (match token expiry)
     });
 
     if (refreshToken) {
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: isProd,
-            sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+            sameSite: isProd ? 'strict' : 'lax',
+            maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
         });
     }
 };
@@ -266,10 +266,13 @@ const refreshToken = async (req, res) => {
 const logout = async (req, res) => {
     const token = req.cookies.refreshToken || req.body.refreshToken;
     
-    if (req.user && token) {
-        // Remove token from DB
-        req.user.refreshTokens = req.user.refreshTokens.filter(rt => rt !== token);
-        await req.user.save();
+    if (token) {
+        // Find user with this refresh token and remove it
+        const user = await User.findOne({ refreshTokens: token });
+        if (user) {
+            user.refreshTokens = user.refreshTokens.filter(rt => rt !== token);
+            await user.save();
+        }
     }
 
     res.cookie('jwt', '', { httpOnly: true, expires: new Date(0) });

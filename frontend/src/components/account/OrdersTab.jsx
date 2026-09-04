@@ -63,8 +63,8 @@ const OrdersTab = () => {
             case 'Placed': return { bg: 'rgba(255, 165, 2, 0.1)', color: '#ffa502' };
             case 'Accepted': return { bg: 'rgba(52, 152, 219, 0.1)', color: '#3498db' };
             case 'Preparing': return { bg: 'rgba(155, 89, 182, 0.1)', color: '#9b59b6' };
-            case 'Out for Delivery': return { bg: 'rgba(230, 126, 34, 0.1)', color: '#e67e22' };
-            case 'Delivered': return { bg: 'rgba(46, 213, 115, 0.1)', color: '#2ed573' };
+            case 'Ready': return { bg: 'rgba(230, 126, 34, 0.1)', color: '#e67e22' };
+            case 'Completed': return { bg: 'rgba(46, 204, 113, 0.1)', color: '#2ecc71' };
             case 'Rejected':
             case 'Cancelled': return { bg: 'rgba(255, 71, 87, 0.1)', color: '#ff4757' };
             default: return { bg: 'rgba(149, 165, 166, 0.1)', color: '#95a5a6' };

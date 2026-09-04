@@ -43,7 +43,6 @@ const SubadminDashboard = () => {
                     { label: 'Orders Today', value: stats.todayOrders, icon: ShoppingBag, onClick: () => navigate('/subadmin/orders') },
                     { label: 'Revenue', value: `₹${stats.todayRevenue?.toLocaleString() || 0}`, icon: TrendingUp },
                     { label: 'Active Chefs', value: stats.totalChefs, icon: ChefHat, onClick: () => navigate('/subadmin/chefs') },
-                    { label: 'Delivery Partners', value: stats.totalDelivery, icon: Truck, onClick: () => navigate('/subadmin/delivery') },
                     { label: 'Customers', value: stats.totalCustomers, icon: Users, onClick: () => navigate('/subadmin/customers') },
                     { label: 'Open Issues', value: stats.openTickets, icon: AlertTriangle, onClick: () => navigate('/subadmin/support') },
                 ].map((s, i) => (

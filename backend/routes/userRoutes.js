@@ -24,6 +24,7 @@ const {
     addPaymentMethod,
     deletePaymentMethod,
     getUserFavourites,
+    toggleFavoriteDish,
     getCustomerWallet,
     topUpCustomerWallet,
     changePassword
@@ -51,6 +52,7 @@ router.put('/update-status', protect, admin, updateUserStatus);
 router.post('/bulk-delete', protect, superAdmin, bulkDeleteUsers);
 router.get('/favourites', protect, getUserFavourites);
 router.put('/follow/:id', protect, toggleFollowChef);
+router.put('/favorite-dish/:id', protect, toggleFavoriteDish);
 router.post('/addresses', protect, addAddress);
 router.delete('/addresses/:id', protect, deleteAddress);
 router.post('/payment-methods', protect, addPaymentMethod);

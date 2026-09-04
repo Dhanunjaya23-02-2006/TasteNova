@@ -6,7 +6,7 @@ import { API_URL } from '../../config';
 
 import { AdminSocketContext } from '../../context/AdminSocketContext';
 
-const statusTabs = ['All', 'Placed', 'Accepted', 'Preparing', 'Ready', 'Out for Delivery', 'Completed', 'Rejected'];
+const statusTabs = ['All', 'Placed', 'Accepted', 'Preparing', 'Ready', 'Completed', 'Rejected'];
 
 const SubadminOrders = () => {
     const { user } = useContext(AuthContext);
@@ -49,7 +49,7 @@ const SubadminOrders = () => {
     const getBadgeClass = (status) => {
         if (['Completed'].includes(status)) return 'sa-badge-green';
         if (['Rejected'].includes(status)) return 'sa-badge-red';
-        if (['Preparing', 'Ready', 'Out for Delivery'].includes(status)) return 'sa-badge-blue';
+        if (['Preparing', 'Ready'].includes(status)) return 'sa-badge-blue';
         return 'sa-badge-yellow';
     };
 
