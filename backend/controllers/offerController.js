@@ -22,7 +22,19 @@ const getOffers = async (req, res) => {
 
 const getPublicOffers = async (req, res) => {
     try {
-        const offers = await Offer.find({ isActive: true, validUntil: { $gte: new Date() } }).populate('city', 'name');
+        const { cityId } = req.query;
+        let query = { isActive: true, validUntil: { $gte: new Date() } };
+        
+        if (cityId) {
+            query.$or = [
+                { scope: 'Global' },
+                { scope: 'City', city: cityId }
+            ];
+        } else {
+            query.scope = 'Global';
+        }
+
+        const offers = await Offer.find(query).populate('city', 'name');
         res.json(offers);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching offers', error: error.message });

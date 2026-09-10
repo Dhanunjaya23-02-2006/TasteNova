@@ -104,8 +104,8 @@ const ChefMenu = () => {
         return (
             <div style={{ padding: '40px 20px', textAlign: 'center' }}>
                 <h2 style={{ color: 'var(--error)' }}>{error || 'Chef not found'}</h2>
-                <button className="btn btn-outline" onClick={() => navigate('/')} style={{ marginTop: '20px' }}>
-                    <ArrowLeft size={16} style={{ marginRight: '8px' }} /> Back to Home
+                <button className="btn btn-outline" onClick={() => navigate(-1)} style={{ marginTop: '20px' }}>
+                    <ArrowLeft size={16} style={{ marginRight: '8px' }} /> Go Back
                 </button>
             </div>
         );
@@ -114,10 +114,11 @@ const ChefMenu = () => {
     return (
         <main className="container hide-scrollbar" style={{ padding: '20px', paddingBottom: '100px' }}>
             <button 
-                onClick={() => navigate('/chefs')} 
+                onClick={() => navigate(-1)} 
+                className="hide-on-mobile"
                 style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '20px' }}
             >
-                <ArrowLeft size={20} /> Back to explore
+                <ArrowLeft size={20} /> Back
             </button>
 
             {/* Chef Profile Header */}

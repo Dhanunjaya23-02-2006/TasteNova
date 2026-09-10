@@ -24,8 +24,9 @@ const generateToken = (id) => {
 // @access  Public
 const registerUser = async (req, res) => {
     const { email } = req.body;
+    const emailStr = email.trim().toLowerCase();
 
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email: emailStr });
 
     if (userExists) {
         return res.status(400).json({ message: 'User already exists' });
@@ -35,7 +36,7 @@ const registerUser = async (req, res) => {
         const otpRes = await fetch('https://otp-service-beta.vercel.app/api/otp/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email, type: 'numeric', organization: 'TasteNova', subject: 'Account Verification OTP' })
+            body: JSON.stringify({ email: emailStr, type: 'numeric', organization: 'TasteNova', subject: 'Account Verification OTP' })
         });
         const otpData = await otpRes.json();
 
@@ -57,8 +58,9 @@ const registerUser = async (req, res) => {
 // @access  Public
 const registerPartner = async (req, res) => {
     const { email } = req.body;
+    const emailStr = email.trim().toLowerCase();
 
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email: emailStr });
 
     if (userExists) {
         return res.status(400).json({ message: 'Email already registered' });
@@ -68,7 +70,7 @@ const registerPartner = async (req, res) => {
         const otpRes = await fetch('https://otp-service-beta.vercel.app/api/otp/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email, type: 'numeric', organization: 'TasteNova', subject: 'Partner Registration OTP' })
+            body: JSON.stringify({ email: emailStr, type: 'numeric', organization: 'TasteNova', subject: 'Partner Registration OTP' })
         });
         const otpData = await otpRes.json();
 
@@ -101,168 +103,7 @@ const checkRoleAvailability = async (req, res) => {
     }
 };
 
-// @desc    Verify Email OTP
-// @route   POST /api/users/verify-otp
-// @access  Public
-const verifyOtp = async (req, res) => {
-    const { name, email, password, phone, address, location, role, emailOtp } = req.body;
-
-    const userExists = await User.findOne({ email });
-    if (userExists) return res.status(400).json({ message: 'User already exists' });
-
-    try {
-        const verifyRes = await fetch('https://otp-service-beta.vercel.app/api/otp/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, otp: emailOtp })
-        });
-        const verifyData = await verifyRes.json();
-
-        if (verifyRes.ok) {
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(password, salt);
-
-            // Special Role Assignment Logic
-            let assignedRole = 'user';
-            let status = 'active';
-            const userCount = await User.countDocuments({});
-            const superadminExists = await User.findOne({ role: 'superadmin' });
-            const adminExists = await User.findOne({ role: 'admin' });
-
-            if (userCount === 0 || (role === 'superadmin' && !superadminExists)) {
-                assignedRole = 'superadmin';
-            } else if (role === 'admin' && !adminExists) {
-                assignedRole = 'admin';
-            } else if (role === 'delivery') {
-                assignedRole = 'delivery';
-                status = 'pending'; // Require approval
-            } else if (role === 'chef') {
-                assignedRole = 'chef';
-                status = 'pending'; // Require approval
-            }
-
-            const addresses = [];
-            if (address || location) {
-                addresses.push({
-                    label: 'Home',
-                    streetAddress: address || 'No address provided',
-                    location: location || { lat: 19.0760, lng: 72.8777 }
-                });
-            }
-
-            let kitchenLocData = undefined;
-            if (assignedRole === 'chef' && location) {
-                kitchenLocData = {
-                    type: 'Point',
-                    coordinates: [location.lng, location.lat]
-                };
-            }
-
-            let assignedCityId = undefined;
-            if (location && location.lat && location.lng) {
-                const cities = await City.find({ isActive: true });
-                let closestCity = null;
-                let minDistance = Infinity;
-                for (const city of cities) {
-                    if (city.latitude && city.longitude) {
-                        const dist = getDistanceFromLatLonInKm(location.lat, location.lng, city.latitude, city.longitude);
-                        // Allow assigning to city if within deliveryRadius (or a generous fallback like 50km if radius isn't strictly enforced for registration)
-                        if (dist < minDistance && dist <= (city.deliveryRadius || 50)) {
-                            minDistance = dist;
-                            closestCity = city;
-                        }
-                    }
-                }
-                if (closestCity) {
-                    assignedCityId = closestCity._id;
-                }
-            }
-
-            const user = await User.create({
-                name,
-                email,
-                password: hashedPassword,
-                phone,
-                role: assignedRole,
-                status,
-                city: assignedCityId,
-                addresses,
-                isPhoneVerified: true,
-                isEmailVerified: true,
-                businessName: req.body.businessName,
-                description: req.body.description,
-                kitchenImage: req.body.kitchenImage,
-                fssaiNumber: req.body.fssaiNumber,
-                kitchenLocation: kitchenLocData
-            });
-
-            if (user) {
-                res.status(201).json({
-                    _id: user._id,
-                    name: user.name,
-                    email: user.email,
-                    role: user.role,
-                    businessName: user.businessName,
-                    addresses: user.addresses,
-                    token: generateToken(user._id)
-                });
-            } else {
-                res.status(400).json({ message: 'Invalid user data during creation' });
-            }
-        } else {
-            return res.status(400).json({ message: verifyData.message || 'Invalid OTP provided' });
-        }
-    } catch (error) {
-        console.error('External OTP verification error:', error);
-        return res.status(500).json({ message: 'OTP verification service unavailable' });
-    }
-};
-
-// @desc    Auth user & get token
-// @route   POST /api/users/login
-// @access  Public
-const authUser = async (req, res) => {
-    try {
-        const { email, password } = req.body;
-
-        if (!email || !password) {
-            return res.status(400).json({ message: 'Please provide email and password' });
-        }
-
-        const user = await User.findOne({ email });
-
-        if (user && user.password && (await bcrypt.compare(password, user.password))) {
-            if (user.status === 'suspended') {
-                return res.status(403).json({ message: 'Your account has been suspended. Please contact support.' });
-            }
-            res.json({
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                phone: user.phone,
-                role: user.role,
-                status: user.status,
-                addresses: user.addresses,
-                businessName: user.businessName,
-                description: user.description,
-                profilePic: user.profilePic,
-                kitchenImage: user.kitchenImage,
-                isIdVerified: user.isIdVerified,
-                isFssaiVerified: user.isFssaiVerified,
-                isKitchenVerified: user.isKitchenVerified,
-                rating: user.rating,
-                numReviews: user.numReviews,
-                following: user.following || [],
-                token: generateToken(user._id)
-            });
-        } else {
-            res.status(401).json({ message: 'Invalid email or password' });
-        }
-    } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ message: 'Server error during login', error: error.message });
-    }
-};
+// authUser and verifyOtp moved to authController.js
 
 // @desc    Get user profile
 // @route   GET /api/users/profile
@@ -527,7 +368,7 @@ const updateUserStatus = async (req, res) => {
         if (isFssaiVerified !== undefined) updateData.isFssaiVerified = isFssaiVerified;
         if (isKitchenVerified !== undefined) updateData.isKitchenVerified = isKitchenVerified;
         
-        const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true });
+        const updatedUser = await User.findByIdAndUpdate(userId, updateData, { returnDocument: 'after' });
         res.json({ message: `User updated successfully`, user: updatedUser });
     } catch (error) {
         res.status(500).json({ message: 'Error updating user' });
@@ -1061,10 +902,8 @@ const changePassword = async (req, res) => {
 module.exports = {
     registerUser,
     registerPartner,
-    verifyOtp,
     forgotPassword,
     resetPassword,
-    authUser,
     getUserProfile,
     getAdminLocation,
     updateUserProfile,

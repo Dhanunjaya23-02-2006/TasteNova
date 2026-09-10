@@ -8,6 +8,8 @@ const Menu = () => {
     const [allChefs, setAllChefs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [banners, setBanners] = useState([]);
+    const [loadingBanners, setLoadingBanners] = useState(true);
 
     useEffect(() => {
         const fetchChefs = async () => {
@@ -34,7 +36,22 @@ const Menu = () => {
             }
         };
 
+        const fetchBanners = async () => {
+            try {
+                let cityQuery = '';
+                const savedCity = sessionStorage.getItem('selectedCity');
+                if (savedCity) {
+                    const parsedCity = JSON.parse(savedCity);
+                    if (parsedCity.cityId) cityQuery = `?cityId=${parsedCity.cityId}`;
+                }
+                const res = await fetch(`${API_URL}/banners/active${cityQuery}`);
+                if (res.ok) setBanners(await res.json());
+            } catch (error) { console.error('Error fetching banners'); }
+            finally { setLoadingBanners(false); }
+        };
+
         fetchChefs();
+        fetchBanners();
     }, []);
 
     const filteredChefs = allChefs.filter(chef => 
@@ -47,6 +64,27 @@ const Menu = () => {
                 <h1 className="menu-title">Explore Nearby Kitchens</h1>
                 <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Discover authentic homemade food crafted by local chefs in your area.</p>
             </div>
+
+            {/* BANNERS SECTION */}
+            {!loadingBanners && banners.length > 0 && (
+                <section className="marketing-banners" style={{ width: '100%', overflowX: 'auto', display: 'flex', gap: '20px', marginBottom: '40px', scrollSnapType: 'x mandatory', scrollBehavior: 'smooth' }}>
+                    {banners.map((banner) => (
+                        <div key={banner._id} style={{ 
+                            flex: '0 0 100%', 
+                            width: '100%', 
+                            borderRadius: '24px', 
+                            overflow: 'hidden',
+                            boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+                            cursor: banner.linkUrl ? 'pointer' : 'default',
+                            position: 'relative',
+                            aspectRatio: '21/9',
+                            scrollSnapAlign: 'center'
+                        }} onClick={() => banner.linkUrl && window.open(banner.linkUrl, '_blank')}>
+                            <img src={banner.imageUrl} alt={banner.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        </div>
+                    ))}
+                </section>
+            )}
 
             {/* Search Bar */}
             <div style={{ position: 'relative', margin: '20px auto', maxWidth: '600px' }}>

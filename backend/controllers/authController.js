@@ -52,7 +52,8 @@ const authUser = async (req, res) => {
             return res.status(400).json({ message: 'Please provide email and password' });
         }
 
-        const user = await User.findOne({ email });
+        const emailStr = email.trim().toLowerCase();
+        const user = await User.findOne({ email: emailStr });
 
         if (user && user.password && (await bcrypt.compare(password, user.password))) {
             if (user.status === 'suspended') {
@@ -108,14 +109,19 @@ const authUser = async (req, res) => {
 const verifyOtp = async (req, res) => {
     const { name, email, password, phone, address, location, role, emailOtp } = req.body;
 
-    const userExists = await User.findOne({ email });
+    if (!email || !emailOtp) {
+        return res.status(400).json({ message: 'Email and OTP are required' });
+    }
+
+    const emailStr = email.trim().toLowerCase();
+    const userExists = await User.findOne({ email: emailStr });
     if (userExists) return res.status(400).json({ message: 'User already exists' });
 
     try {
         const verifyRes = await fetch('https://otp-service-beta.vercel.app/api/otp/verify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, otp: emailOtp })
+            body: JSON.stringify({ email: emailStr, otp: emailOtp })
         });
         const verifyData = await verifyRes.json();
 
@@ -179,7 +185,7 @@ const verifyOtp = async (req, res) => {
 
             const user = await User.create({
                 name,
-                email,
+                email: emailStr,
                 password: hashedPassword,
                 phone,
                 role: assignedRole,
@@ -219,7 +225,7 @@ const verifyOtp = async (req, res) => {
                 res.status(400).json({ message: 'Invalid user data during creation' });
             }
         } else {
-            return res.status(400).json({ message: verifyData.message || 'Invalid OTP provided' });
+            return res.status(400).json({ message: verifyData.error || verifyData.message || 'Invalid OTP provided' });
         }
     } catch (error) {
         console.error('External OTP verification error:', error);

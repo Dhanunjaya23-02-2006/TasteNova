@@ -7,11 +7,20 @@ const Offers = () => {
     const [offers, setOffers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [copiedCode, setCopiedCode] = useState(null);
+    const [banners, setBanners] = useState([]);
+    const [loadingBanners, setLoadingBanners] = useState(true);
 
     useEffect(() => {
+        let cityQuery = '';
+        const savedCity = sessionStorage.getItem('selectedCity');
+        if (savedCity) {
+            const parsedCity = JSON.parse(savedCity);
+            if (parsedCity.cityId) cityQuery = `?cityId=${parsedCity.cityId}`;
+        }
+
         const fetchOffers = async () => {
             try {
-                const res = await fetch(`${API_URL}/offers/public`);
+                const res = await fetch(`${API_URL}/offers/public${cityQuery}`);
                 if (res.ok) {
                     const data = await res.json();
                     setOffers(data);
@@ -26,7 +35,16 @@ const Offers = () => {
             }
         };
 
+        const fetchBanners = async () => {
+            try {
+                const res = await fetch(`${API_URL}/banners/active${cityQuery}`);
+                if (res.ok) setBanners(await res.json());
+            } catch (error) { console.error('Error fetching banners'); }
+            finally { setLoadingBanners(false); }
+        };
+
         fetchOffers();
+        fetchBanners();
     }, []);
 
     const handleCopy = (code) => {
@@ -52,6 +70,27 @@ const Offers = () => {
                     <p style={{ color: 'var(--text-muted)', margin: 0 }}>Exclusive deals just for you.</p>
                 </div>
             </div>
+
+            {/* BANNERS SECTION */}
+            {!loadingBanners && banners.length > 0 && (
+                <section className="marketing-banners" style={{ width: '100%', overflowX: 'auto', display: 'flex', gap: '20px', marginBottom: '40px', scrollSnapType: 'x mandatory', scrollBehavior: 'smooth' }}>
+                    {banners.map((banner) => (
+                        <div key={banner._id} style={{ 
+                            flex: '0 0 100%', 
+                            width: '100%', 
+                            borderRadius: '24px', 
+                            overflow: 'hidden',
+                            boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+                            cursor: banner.linkUrl ? 'pointer' : 'default',
+                            position: 'relative',
+                            aspectRatio: '21/9',
+                            scrollSnapAlign: 'center'
+                        }} onClick={() => banner.linkUrl && window.open(banner.linkUrl, '_blank')}>
+                            <img src={banner.imageUrl} alt={banner.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        </div>
+                    ))}
+                </section>
+            )}
 
             {loading ? (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>

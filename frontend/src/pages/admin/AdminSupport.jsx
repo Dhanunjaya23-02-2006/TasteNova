@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
+import { useModal } from '../../components/ModalProvider';
 import toast from 'react-hot-toast';
 import { API_URL } from '../../config';
 
@@ -7,6 +8,7 @@ const categories = ['food_quality', 'late_delivery', 'wrong_item', 'missing_item
 
 const AdminSupport = () => {
     const { user } = useContext(AuthContext);
+    const { showPrompt } = useModal();
     const [tickets, setTickets] = useState([]);
     const [counts, setCounts] = useState({ urgent: 0, open: 0, inProgress: 0, resolved: 0 });
     const [activeStatus, setActiveStatus] = useState('All');
@@ -39,8 +41,8 @@ const AdminSupport = () => {
         } catch (e) { toast.error('Error'); }
     };
 
-    const resolveTicket = (id) => {
-        const resolution = prompt('Enter resolution note:');
+    const resolveTicket = async (id) => {
+        const resolution = await showPrompt({ title: 'Resolve Ticket', message: 'Enter a resolution note for this support ticket.', placeholder: 'Describe the resolution...', confirmText: 'Resolve', variant: 'primary' });
         if (resolution) handleUpdate(id, 'resolved', resolution);
     };
 

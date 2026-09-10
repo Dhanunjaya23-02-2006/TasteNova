@@ -27,7 +27,7 @@ const Login = () => {
     }, [location.pathname]);
 
     // Form Data State
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState(location.state?.formData || {
         name: '', email: '', password: '', confirmPassword: '', phone: '',
         termsAccepted: false, emailOtp: '', newPassword: '', resetOtp: ''
     });
@@ -120,7 +120,7 @@ const Login = () => {
 
         try {
             if (authStep === 'LOGIN') {
-                const res = await fetch(`${API_URL}/users/login`, {
+                const res = await fetch(`${API_URL}/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -158,14 +158,14 @@ const Login = () => {
                 const data = await res.json();
                 if (res.ok) {
                     toast.success('Verification Code Sent to Email!');
-                    navigate('/verify-otp');
+                    navigate('/verify-otp', { state: { formData } });
                     setOtpTimer(180);
                     setCanResend(false);
                 } else setError(data.message || 'Registration failed');
 
             } else if (authStep === 'VERIFY_OTP') {
                 const payload = { ...formData, role: 'user' };
-                const res = await fetch(`${API_URL}/users/verify-otp`, {
+                const res = await fetch(`${API_URL}/auth/verify-otp`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -191,7 +191,7 @@ const Login = () => {
                 const data = await res.json();
                 if (res.ok) {
                     toast.success('Reset Code Sent!');
-                    navigate('/forgot-password'); // or handle internal state
+                    navigate('/forgot-password', { state: { formData } }); // or handle internal state
                     setAuthStep('RESET_PASSWORD');
                     setForgotPasswordTimer(180);
                     setCanResendForgotPassword(false);

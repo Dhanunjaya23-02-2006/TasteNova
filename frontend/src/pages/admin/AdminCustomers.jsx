@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { Search } from 'lucide-react';
+import { useModal } from '../../components/ModalProvider';
 import toast from 'react-hot-toast';
 import { API_URL } from '../../config';
 
@@ -9,6 +10,7 @@ import { AdminSocketContext } from '../../context/AdminSocketContext';
 const AdminCustomers = () => {
     const { user } = useContext(AuthContext);
     const { lastUpdated } = useContext(AdminSocketContext) || {};
+    const { showPrompt } = useModal();
     const [customers, setCustomers] = useState([]);
     const [total, setTotal] = useState(0);
     const [search, setSearch] = useState('');
@@ -25,7 +27,7 @@ const AdminCustomers = () => {
     useEffect(() => { fetchCustomers(); }, [search, lastUpdated]);
 
     const handleSuspend = async (id) => {
-        const reason = prompt('Reason for suspension (e.g., Fraud, Coupon abuse, Repeated fake orders):');
+        const reason = await showPrompt({ title: 'Suspend Customer', message: 'Provide a reason for suspending this customer.', placeholder: 'e.g., Fraud, Coupon abuse, Repeated fake orders', confirmText: 'Suspend', variant: 'danger' });
         if (!reason) return;
         try {
             const res = await fetch(`${API_URL}/admin/customers/${id}/suspend`, {

@@ -54,7 +54,8 @@ const mobileBottomNav = [
     { to: '/chef/dashboard', label: 'Home', icon: HomeIcon },
     { to: '/chef/orders', label: 'Orders', icon: ShoppingBag },
     { to: '/chef/menu', label: 'Menu', icon: ChefHat },
-    { action: 'more', label: 'More', icon: Menu },
+    { to: '/chef/earnings', label: 'Earnings', icon: Wallet },
+    { action: 'more', label: 'More', icon: MoreHorizontal },
 ];
 
 const ChefLayout = () => {
@@ -348,75 +349,78 @@ const ChefLayout = () => {
                     </div>
                 </aside>
 
-                {/* Mobile nav overlay */}
-                {mobileMenuOpen && (
-                    <div className="subadmin-mobile-nav" style={{ position: 'absolute', top: '70px', left: 0, right: 0, bottom: 0, zIndex: 30, background: 'rgba(0,0,0,0.5)' }}>
-                        <div style={{ width: '250px', background: '#fff', height: '100%', padding: '16px', overflowY: 'auto' }}>
-                            {sidebarGroups.map((group, idx) => (
-                                <div key={idx} style={{ marginBottom: '16px' }}>
-                                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.5px', marginBottom: '8px', paddingLeft: '4px' }}>
-                                        {group.title}
-                                    </div>
-                                    {group.items.map(item => (
-                                        <NavLink key={item.to} to={item.to} end={item.end} style={navLinkStyle} onClick={() => setMobileMenuOpen(false)}>
-                                            <item.icon size={16} /> {item.label}
-                                        </NavLink>
-                                    ))}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
                 {/* ─── MAIN CONTENT ─── */}
                 <main style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: window.innerWidth > 600 ? '32px' : '16px' }}>
                     <Outlet />
                 </main>
             </div>
 
-            {/* ─── MOBILE BOTTOM NAV ─── */}
-            <nav className="show-on-mobile-flex" style={{
-                display: 'none',
-                position: 'fixed', bottom: 0, left: 0, right: 0,
-                background: '#fff',
-                borderTop: '1px solid var(--border-subtle)',
-                padding: '8px 0 env(safe-area-inset-bottom, 12px)',
-                zIndex: 1000,
-                boxShadow: '0 -4px 12px rgba(0,0,0,0.05)',
-                justifyContent: 'space-around'
-            }}>
+            {/* ─── BOTTOM SHEET (More Menu) ─── */}
+            {mobileMenuOpen && (
+                <>
+                    <div className="chef-more-sheet-overlay" onClick={() => setMobileMenuOpen(false)} />
+                    <div className="chef-more-sheet">
+                        <div className="chef-more-sheet-handle" />
+                        {sidebarGroups.map((group, idx) => (
+                            <div key={idx}>
+                                <div className="chef-more-sheet-group-title">{group.title}</div>
+                                {group.items
+                                    .filter(item => !['/chef/dashboard', '/chef/orders', '/chef/menu', '/chef/earnings'].includes(item.to))
+                                    .map(item => (
+                                        <NavLink
+                                            key={item.to}
+                                            to={item.to}
+                                            end={item.end}
+                                            className={({ isActive }) => `chef-more-sheet-item ${isActive ? 'active' : ''}`}
+                                            onClick={() => setMobileMenuOpen(false)}
+                                        >
+                                            <item.icon size={20} />
+                                            <span style={{ flex: 1 }}>{item.label}</span>
+                                            {item.badge && (
+                                                <span style={{ background: 'var(--primary)', color: '#fff', fontSize: '0.6rem', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
+                                                    {item.badge}
+                                                </span>
+                                            )}
+                                        </NavLink>
+                                    ))
+                                }
+                            </div>
+                        ))}
+                        <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: '8px', paddingTop: '8px' }}>
+                            <button
+                                onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
+                                className="chef-more-sheet-item"
+                                style={{ width: '100%', border: 'none', background: 'none', color: 'var(--error)', cursor: 'pointer', fontFamily: 'inherit' }}
+                            >
+                                <LogOut size={20} />
+                                <span>Logout</span>
+                            </button>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {/* ─── FLOATING PILL BOTTOM NAVBAR (Mobile) ─── */}
+            <nav className="mobile-floating-nav chef-nav">
                 {mobileBottomNav.map(item => (
                     item.action === 'more' ? (
                         <button
                             key="more"
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                            style={{
-                                flex: 1,
-                                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-                                background: 'none', border: 'none',
-                                fontSize: '0.75rem', fontWeight: 600,
-                                color: mobileMenuOpen ? 'var(--primary)' : 'var(--text-muted)',
-                                transition: 'color 0.2s', cursor: 'pointer'
-                            }}
+                            className={`mobile-floating-nav-item ${mobileMenuOpen ? 'active' : ''}`}
                         >
                             <item.icon size={22} />
-                            {item.label}
+                            <span>{item.label}</span>
                         </button>
                     ) : (
                         <NavLink
                             key={item.to}
                             to={item.to}
-                            style={({ isActive }) => ({
-                                flex: 1,
-                                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-                                textDecoration: 'none',
-                                fontSize: '0.75rem', fontWeight: 600,
-                                color: isActive ? 'var(--primary)' : 'var(--text-muted)',
-                                transition: 'color 0.2s'
-                            })}
+                            end={item.end}
+                            className={({ isActive }) => `mobile-floating-nav-item ${isActive ? 'active' : ''}`}
                         >
                             <item.icon size={22} />
-                            {item.label}
+                            <span>{item.label}</span>
                         </NavLink>
                     )
                 ))}

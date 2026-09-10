@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import * as SecureStore from 'expo-secure-store';
 
-const SOCKET_URL = 'http://10.10.18.57:5001';
+const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || 'http://192.168.1.11:5001';
 
 class SocketService {
   private socket: Socket | null = null;

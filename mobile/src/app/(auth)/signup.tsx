@@ -26,18 +26,16 @@ export default function SignupScreen() {
     setLoading(true);
     try {
       const res = await api.post('/users', { 
-        name,
-        email, 
-        phone,
-        password,
-        role
+        email 
       });
       
-      if (res.data.token && res.data.user) {
-        await signIn(res.data.token, res.data.user);
-      }
+      // Navigate to OTP verification instead of signing in
+      router.push({ 
+        pathname: '/(auth)/verify-otp', 
+        params: { name, email, phone, password, role } 
+      });
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Failed to create account');
+      Alert.alert('Error', error.response?.data?.message || 'Failed to send verification code');
     } finally {
       setLoading(false);
     }

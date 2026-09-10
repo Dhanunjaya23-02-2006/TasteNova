@@ -29,13 +29,10 @@ const {
     topUpCustomerWallet,
     changePassword
 } = require('../controllers/userController');
-const { authUser, verifyOtp } = require('../controllers/authController');
 const { protect, superAdmin, admin } = require('../middleware/authMiddleware');
 
 router.post('/', registerUser);
 router.post('/register-partner', registerPartner);
-router.post('/login', authUser);
-router.post('/verify-otp', verifyOtp);
 router.post('/forgot-password', forgotPassword);
 router.put('/reset-password', resetPassword);
 router.route('/profile').get(protect, getUserProfile).put(protect, updateUserProfile);

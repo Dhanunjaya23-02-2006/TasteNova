@@ -9,16 +9,27 @@ export default function ChefTabLayout() {
         tabBarActiveTintColor: '#2E7D32',
         tabBarInactiveTintColor: '#666666',
         tabBarStyle: {
-          height: 60,
-          paddingBottom: 10,
-          paddingTop: 5,
-          borderTopWidth: 1,
-          borderTopColor: '#EEEEEE',
+          position: 'absolute',
+          bottom: 25,
+          left: 20,
+          right: 20,
+          elevation: 10,
           backgroundColor: '#FFFFFF',
+          borderRadius: 35,
+          height: 65,
+          paddingBottom: 8,
+          paddingTop: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 10 },
+          shadowOpacity: 0.15,
+          shadowRadius: 20,
+          borderTopWidth: 0,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 10,
           fontFamily: 'Inter',
+          fontWeight: '600',
+          marginBottom: 4
         }
       }}>
       <Tabs.Screen

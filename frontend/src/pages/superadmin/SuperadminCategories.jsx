@@ -3,11 +3,13 @@ import { Search, GripVertical, Image as ImageIcon, PlusCircle, Edit3, Trash2, X 
 import toast from 'react-hot-toast';
 import { AuthContext } from '../../context/AuthContext';
 import { SuperadminSocketContext } from '../../context/SuperadminSocketContext';
+import { useModal } from '../../components/ModalProvider';
 import { API_URL } from '../../config';
 
 const SuperadminCategories = () => {
     const { user } = useContext(AuthContext);
     const { lastUpdated } = useContext(SuperadminSocketContext);
+    const { showConfirm } = useModal();
     const [search, setSearch] = useState('');
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -52,7 +54,8 @@ const SuperadminCategories = () => {
     };
 
     const handleDelete = async (id, name) => {
-        if (!window.confirm(`Are you sure you want to delete ${name}?`)) return;
+        const confirmed = await showConfirm({ title: 'Delete Category', message: `Are you sure you want to delete "${name}"?`, confirmText: 'Delete', variant: 'danger' });
+        if (!confirmed) return;
         try {
             const res = await fetch(`${API_URL}/superadmin/categories/${id}`, {
                 method: 'DELETE',

@@ -88,7 +88,7 @@ const updateZone = async (req, res) => {
         const zone = await Zone.findOneAndUpdate(
             { _id: req.params.id, ...req.cityFilter },
             req.body,
-            { new: true }
+            { returnDocument: 'after' }
         );
         if (!zone) return res.status(404).json({ message: 'Zone not found' });
         if (req.app.get('io')) req.app.get('io').emit('admin_refresh');
@@ -263,7 +263,18 @@ const getDeliveryPartners = async (req, res) => {
 // ========================
 const getCitySettings = async (req, res) => {
     try {
-        const cityId = req.user.city || (req.user.assignedCities && req.user.assignedCities[0]);
+        let cityId = req.user.city || (req.user.assignedCities && req.user.assignedCities[0]);
+        
+        // For superadmins without an assigned city, fall back to the first available city
+        if (!cityId && req.user.role === 'superadmin') {
+            const firstCity = await City.findOne({});
+            if (firstCity) {
+                cityId = firstCity._id;
+            } else {
+                return res.json({ message: 'No cities configured yet' });
+            }
+        }
+        
         if (!cityId) return res.status(400).json({ message: 'No city assigned to this admin' });
 
         const city = await City.findById(cityId);
@@ -277,7 +288,16 @@ const getCitySettings = async (req, res) => {
 
 const updateCitySettings = async (req, res) => {
     try {
-        const cityId = req.user.city || (req.user.assignedCities && req.user.assignedCities[0]);
+        let cityId = req.user.city || (req.user.assignedCities && req.user.assignedCities[0]);
+        
+        // For superadmins without an assigned city, fall back to the first available city
+        if (!cityId && req.user.role === 'superadmin') {
+            const firstCity = await City.findOne({});
+            if (firstCity) {
+                cityId = firstCity._id;
+            }
+        }
+        
         if (!cityId) return res.status(400).json({ message: 'No city assigned to this admin' });
 
         const { baseDeliveryFee, perKmFee, freeDeliveryThreshold, commissionRate, refundThreshold, deliveryRadius } = req.body;
@@ -285,7 +305,7 @@ const updateCitySettings = async (req, res) => {
         const city = await City.findByIdAndUpdate(
             cityId,
             { baseDeliveryFee, perKmFee, freeDeliveryThreshold, commissionRate, refundThreshold, deliveryRadius },
-            { new: true }
+            { returnDocument: 'after' }
         );
 
         if (!city) return res.status(404).json({ message: 'City not found' });

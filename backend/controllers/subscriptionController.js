@@ -69,7 +69,7 @@ const updateSubscriptionPlan = async (req, res) => {
         const updatedPlan = await SubscriptionPlan.findByIdAndUpdate(
             req.params.id,
             req.body,
-            { new: true }
+            { returnDocument: 'after' }
         );
 
         res.json(updatedPlan);

@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { SuperadminSocketContext } from '../../context/SuperadminSocketContext';
+import { useModal } from '../../components/ModalProvider';
 import toast from 'react-hot-toast';
 import { API_URL } from '../../config';
 
 const SuperadminVerification = () => {
     const { user } = useContext(AuthContext);
     const { lastUpdated } = useContext(SuperadminSocketContext);
+    const { showConfirm, showPrompt } = useModal();
     const [chefs, setChefs] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -25,16 +27,34 @@ const SuperadminVerification = () => {
     useEffect(() => { fetchQueue(); }, []);
 
     const handleVerify = async (id, status) => {
-        const note = status === 'suspended' ? prompt('Reason for rejection/suspension:') : '';
-        if (status === 'suspended' && !note) return;
+        let note = '';
+        if (status === 'suspended') {
+            note = await showPrompt({
+                title: 'Rejection Reason',
+                message: 'Please provide a reason for rejecting this chef application.',
+                placeholder: 'e.g., Incomplete documentation, failed kitchen inspection...',
+                confirmText: 'Reject Chef',
+                variant: 'danger'
+            });
+            if (!note) return;
+        } else {
+            const confirmed = await showConfirm({
+                title: 'Approve Chef',
+                message: 'Are you sure you want to approve this chef? They will be able to start accepting orders.',
+                confirmText: 'Approve',
+                variant: 'primary'
+            });
+            if (!confirmed) return;
+        }
+
         try {
             const res = await fetch(`${API_URL}/superadmin/verification/${id}`, {
                 method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` },
                 body: JSON.stringify({ status, note })
             });
-            if (res.ok) { toast.success('Processed'); fetchQueue(); }
-            else { toast.error('Failed'); }
-        } catch (e) { toast.error('Error'); }
+            if (res.ok) { toast.success(status === 'active' ? 'Chef approved successfully!' : 'Chef rejected'); fetchQueue(); }
+            else { toast.error('Failed to process verification'); }
+        } catch (e) { toast.error('Network error'); }
     };
 
     return (
@@ -81,8 +101,6 @@ const SuperadminVerification = () => {
                         </table>
                     )}
                 </div>
-
-
 
             </div>
         </div>

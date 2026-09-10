@@ -51,7 +51,7 @@ const updateGlobalCommission = async (req, res) => {
         const globalSetting = await GlobalSetting.findOneAndUpdate(
             { key: 'default_commission' },
             { value: Number(rate) },
-            { new: true, upsert: true }
+            { returnDocument: 'after', upsert: true }
         );
         res.json({ success: true, global: globalSetting.value });
     } catch (error) {
@@ -70,7 +70,7 @@ const updateCityCommission = async (req, res) => {
             ? { $unset: { commissionRate: 1 } }
             : { commissionRate: Number(rate) };
 
-        const city = await City.findByIdAndUpdate(req.params.id, updateData, { new: true });
+        const city = await City.findByIdAndUpdate(req.params.id, updateData, { returnDocument: 'after' });
         res.json({ success: true, city });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -87,7 +87,7 @@ const updateChefCommission = async (req, res) => {
             ? { $unset: { commissionRate: 1 } }
             : { commissionRate: Number(rate) };
 
-        const chef = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
+        const chef = await User.findByIdAndUpdate(req.params.id, updateData, { returnDocument: 'after' });
         res.json({ success: true, chef });
     } catch (error) {
         res.status(500).json({ message: error.message });

@@ -105,7 +105,7 @@ const TrackOrder = () => {
 
     return (
         <div className="container mt-4 mb-5" style={{ animation: 'fadeInUp 0.6s ease', maxWidth: '1000px' }}>
-            <button onClick={() => navigate('/account/orders')} style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', cursor: 'pointer', marginBottom: '24px', fontSize: '0.95rem', fontWeight: 600 }}>
+            <button onClick={() => navigate('/account/orders')} className="hide-on-mobile" style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', cursor: 'pointer', marginBottom: '24px', fontSize: '0.95rem', fontWeight: 600 }}>
                 <ArrowLeft size={18} /> Back to Orders
             </button>
             

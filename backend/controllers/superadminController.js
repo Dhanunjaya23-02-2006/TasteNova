@@ -130,7 +130,7 @@ const createCity = async (req, res) => {
 
 const updateCity = async (req, res) => {
     try {
-        const city = await City.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const city = await City.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after' });
         if (!city) return res.status(404).json({ message: 'City not found' });
         await logAction(req.user._id, 'UPDATE_CITY', 'City', city._id, city._id, `Updated city ${city.name}`);
         if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
@@ -686,7 +686,7 @@ const createTax = async (req, res) => {
 const updateTax = async (req, res) => {
     try {
         const TaxRule = require('../models/TaxRule');
-        const tax = await TaxRule.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const tax = await TaxRule.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after' });
         if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.json(tax);
     } catch (error) {
@@ -728,7 +728,7 @@ const createOffer = async (req, res) => {
 
 const updateOffer = async (req, res) => {
     try {
-        const offer = await Offer.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const offer = await Offer.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after' });
         if (!offer) return res.status(404).json({ message: 'Offer not found' });
         if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.json(offer);
@@ -773,7 +773,7 @@ const createBanner = async (req, res) => {
 const updateBanner = async (req, res) => {
     try {
         const Banner = require('../models/Banner');
-        const banner = await Banner.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const banner = await Banner.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after' });
         if (!banner) return res.status(404).json({ message: 'Banner not found' });
         if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.json(banner);
@@ -807,7 +807,7 @@ const getCampaigns = async (req, res) => {
 const updateCampaign = async (req, res) => {
     try {
         const MarketingCampaign = require('../models/MarketingCampaign');
-        const campaign = await MarketingCampaign.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const campaign = await MarketingCampaign.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after' });
         if (!campaign) return res.status(404).json({ message: 'Campaign not found' });
         if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.json(campaign);
@@ -1154,7 +1154,7 @@ const createCategory = async (req, res) => {
 
 const updateCategory = async (req, res) => {
     try {
-        const category = await Category.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const category = await Category.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after' });
         if (!category) return res.status(404).json({ message: 'Category not found' });
         if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
         res.json(category);

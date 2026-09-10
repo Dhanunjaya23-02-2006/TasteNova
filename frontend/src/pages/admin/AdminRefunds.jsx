@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
+import { useModal } from '../../components/ModalProvider';
 import toast from 'react-hot-toast';
 import { API_URL } from '../../config';
 
@@ -7,6 +8,7 @@ const statusTabs = ['All', 'Pending', 'Approved', 'Processing', 'Completed', 'Re
 
 const AdminRefunds = () => {
     const { user } = useContext(AuthContext);
+    const { showPrompt } = useModal();
     const [orders, setOrders] = useState([]);
     const [activeStatus, setActiveStatus] = useState('All');
     const [loading, setLoading] = useState(true);
@@ -23,7 +25,7 @@ const AdminRefunds = () => {
     useEffect(() => { fetchRefunds(); }, [activeStatus]);
 
     const handleRefund = async (id, action) => {
-        const amount = action === 'approve' ? prompt('Enter refund amount (₹):') : null;
+        const amount = action === 'approve' ? await showPrompt({ title: 'Approve Refund', message: 'Enter the refund amount to process.', placeholder: 'e.g., 250', confirmText: 'Approve Refund', variant: 'primary' }) : null;
         if (action === 'approve' && !amount) return;
         try {
             const res = await fetch(`${API_URL}/Admin/refunds/${id}`, {

@@ -20,6 +20,8 @@ const Home = () => {
     const [loadingCategories, setLoadingCategories] = useState(true);
     const [featuredChefs, setFeaturedChefs] = useState([]);
     const [loadingChefs, setLoadingChefs] = useState(true);
+    const [banners, setBanners] = useState([]);
+    const [loadingBanners, setLoadingBanners] = useState(true);
     
     const [loading, setLoading] = useState(true);
 
@@ -37,7 +39,17 @@ const Home = () => {
         fetchCities();
         fetchCategories();
         fetchFeaturedChefs();
-    }, [user]);
+        fetchBanners();
+    }, [user, location.cityId]);
+
+    const fetchBanners = async () => {
+        try {
+            const query = location.cityId ? `?cityId=${location.cityId}` : '';
+            const res = await fetch(`${API_URL}/banners/active${query}`);
+            if (res.ok) setBanners(await res.json());
+        } catch (error) { console.error('Error fetching banners'); }
+        finally { setLoadingBanners(false); }
+    };
 
     const fetchFeaturedChefs = async () => {
         try {
@@ -113,6 +125,27 @@ const Home = () => {
 
     return (
         <main>
+            {/* BANNERS SECTION */}
+            {!loadingBanners && banners.length > 0 && (
+                <section className="marketing-banners container" style={{ width: '100%', overflowX: 'auto', display: 'flex', gap: '20px', padding: '20px 0', scrollSnapType: 'x mandatory', scrollBehavior: 'smooth' }}>
+                    {banners.map((banner) => (
+                        <div key={banner._id} style={{ 
+                            flex: '0 0 100%', 
+                            width: '100%', 
+                            borderRadius: '24px', 
+                            overflow: 'hidden',
+                            boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+                            cursor: banner.linkUrl ? 'pointer' : 'default',
+                            position: 'relative',
+                            aspectRatio: '21/9',
+                            scrollSnapAlign: 'center'
+                        }} onClick={() => banner.linkUrl && window.open(banner.linkUrl, '_blank')}>
+                            <img src={banner.imageUrl} alt={banner.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        </div>
+                    ))}
+                </section>
+            )}
+
             {/* HERO SECTION */}
             <section className="landing-hero">
                 <div className="container" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '40px', paddingBottom: '0' }}>

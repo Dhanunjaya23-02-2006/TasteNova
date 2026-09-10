@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { API_URL } from '../../config';
 import { ChefHat, Search, Star, MapPin, Navigation, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -7,14 +7,20 @@ import toast from 'react-hot-toast';
 const ChefsList = () => {
     const [chefs, setChefs] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [searchParams] = useSearchParams();
+    const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
     const [userLocation, setUserLocation] = useState(null);
+    const searchInputRef = React.useRef(null);
 
     useEffect(() => {
         // Check if user has a location set in session storage
         const savedLoc = sessionStorage.getItem('selectedCity');
         if (savedLoc) {
             setUserLocation(JSON.parse(savedLoc));
+        }
+        // Auto-focus search input when navigated to via search tab
+        if (searchInputRef.current && searchParams.get('search') !== null) {
+            searchInputRef.current.focus();
         }
     }, []);
 
@@ -48,9 +54,13 @@ const ChefsList = () => {
     }, [userLocation]);
 
     const filteredChefs = chefs.filter(chef => {
-        const nameMatch = chef.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          chef.businessName?.toLowerCase().includes(searchTerm.toLowerCase());
-        return nameMatch;
+        const term = searchTerm.toLowerCase();
+        const nameMatch = chef.name?.toLowerCase().includes(term) || 
+                          chef.businessName?.toLowerCase().includes(term);
+        const cuisineMatch = chef.cuisines?.some(c => c.toLowerCase().includes(term));
+        const descMatch = chef.description?.toLowerCase().includes(term) ||
+                          chef.bio?.toLowerCase().includes(term);
+        return nameMatch || cuisineMatch || descMatch;
     });
 
     return (
@@ -69,8 +79,9 @@ const ChefsList = () => {
                 <div style={{ position: 'relative', width: '100%', flex: window.innerWidth <= 768 ? 'none' : '1 1 300px', maxWidth: window.innerWidth <= 768 ? '100%' : '400px' }}>
                     <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                     <input 
+                        ref={searchInputRef}
                         type="text" 
-                        placeholder="Search chefs by name..." 
+                        placeholder="Search chefs, cuisines, dishes..." 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         style={{ 

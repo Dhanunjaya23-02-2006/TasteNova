@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { RefreshCw } from 'lucide-react';
+import { useModal } from '../../components/ModalProvider';
 import toast from 'react-hot-toast';
 import { API_URL } from '../../config';
 
@@ -11,6 +12,7 @@ const statusTabs = ['All', 'Placed', 'Accepted', 'Preparing', 'Ready', 'Out for 
 const AdminOrders = () => {
     const { user } = useContext(AuthContext);
     const { lastUpdated } = useContext(AdminSocketContext) || {};
+    const { showConfirm } = useModal();
     const [orders, setOrders] = useState([]);
     const [total, setTotal] = useState(0);
     const [activeStatus, setActiveStatus] = useState('All');
@@ -35,7 +37,8 @@ const AdminOrders = () => {
     useEffect(() => { fetchOrders(activeStatus); }, [activeStatus, lastUpdated]);
 
     const handleCancel = async (id) => {
-        if (!window.confirm('Cancel this order?')) return;
+        const confirmed = await showConfirm({ title: 'Cancel Order', message: 'Are you sure you want to cancel this order?', confirmText: 'Cancel Order', variant: 'danger' });
+        if (!confirmed) return;
         try {
             const res = await fetch(`${API_URL}/admin/orders/${id}/cancel`, {
                 method: 'PUT',

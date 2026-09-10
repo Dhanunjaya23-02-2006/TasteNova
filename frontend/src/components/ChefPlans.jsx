@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
+import { useModal } from './ModalProvider';
 import toast from 'react-hot-toast';
 import { Plus, Trash2, PackagePlus, Edit } from 'lucide-react';
 
 const ChefPlans = () => {
     const { user } = useContext(AuthContext);
+    const { showConfirm } = useModal();
     const [plans, setPlans] = useState([]);
     const [menuItems, setMenuItems] = useState([]);
     const [isCreating, setIsCreating] = useState(false);
@@ -87,7 +89,8 @@ const ChefPlans = () => {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this plan?')) return;
+        const confirmed = await showConfirm({ title: 'Delete Plan', message: 'Are you sure you want to delete this subscription plan?', confirmText: 'Delete', variant: 'danger' });
+        if (!confirmed) return;
         try {
             const res = await fetch(`${API_URL}/subscriptions/plans/${id}`, {
                 method: 'DELETE',

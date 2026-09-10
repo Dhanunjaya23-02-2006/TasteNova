@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import {
     TrendingUp, ShoppingBag, ChefHat, Star, Users, Wallet,
     Calendar, ArrowRight, Clock, CheckCircle2, Package, Megaphone, Plus, FileText, ChevronDown, Gift, AlertCircle, Activity,
-    CalendarCheck, Sparkles
+    CalendarCheck, Sparkles, ShieldCheck, Ticket, BarChart3
 } from 'lucide-react';
 import { SocketContext } from '../../context/SocketContext';
 
@@ -109,7 +109,7 @@ const ChefDashboardPage = () => {
                 const data = await res.json();
                 if (data.isOpen !== undefined) {
                     setIsOpen(data.isOpen);
-                    
+
                     // Prompt chef to open kitchen if it's closed (only once per session)
                     if (data.isOpen === false && !sessionStorage.getItem('kitchenPromptShown')) {
                         sessionStorage.setItem('kitchenPromptShown', 'true');
@@ -117,17 +117,17 @@ const ChefDashboardPage = () => {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 <span style={{ fontWeight: 600 }}>Your kitchen is currently closed.</span>
                                 <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                                    <button 
+                                    <button
                                         onClick={() => {
                                             toast.dismiss(t.id);
                                             handleStatusSelect(true);
-                                        }} 
+                                        }}
                                         style={{ padding: '6px 12px', fontSize: '0.85rem', background: '#27ae60', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
                                     >
                                         Open Kitchen Now
                                     </button>
-                                    <button 
-                                        onClick={() => toast.dismiss(t.id)} 
+                                    <button
+                                        onClick={() => toast.dismiss(t.id)}
                                         style={{ padding: '6px 12px', fontSize: '0.85rem', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border-subtle)', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
                                     >
                                         Later

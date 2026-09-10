@@ -33,7 +33,7 @@ const createBanner = async (req, res) => {
 // @access  Private/SuperAdmin
 const updateBanner = async (req, res) => {
     try {
-        const banner = await Banner.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const banner = await Banner.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after' });
         res.json(banner);
     } catch (error) {
         res.status(500).json({ message: error.message });

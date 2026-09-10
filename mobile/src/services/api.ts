@@ -2,7 +2,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 // Use your machine's local IP address when running on a physical device
-const API_URL = 'http://10.10.18.57:5001/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.11:5001/api';
 
 // Base API instance
 export const api = axios.create({
@@ -29,15 +29,19 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor for handling 401s and token refresh could go here
+// Response interceptor for handling 401s
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     // Handle 401 Unauthorized / Token Expiry
     if (error.response?.status === 401) {
-      // Potentially clear token and redirect to login
+      // Clear token and redirect to login
       await SecureStore.deleteItemAsync('token');
-      // trigger a logout action via state manager or navigation
+      await SecureStore.deleteItemAsync('user');
+      
+      // Need to dynamically import to avoid circular dependency
+      const { useAuthStore } = require('../store/authStore');
+      useAuthStore.getState().signOut();
     }
     return Promise.reject(error);
   }

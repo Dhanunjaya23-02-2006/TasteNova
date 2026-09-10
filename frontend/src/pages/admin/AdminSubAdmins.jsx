@@ -2,10 +2,12 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Search, UserPlus, Edit3, Trash2, X, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthContext } from '../../context/AuthContext';
+import { useModal } from '../../components/ModalProvider';
 import { API_URL } from '../../config';
 
 const AdminSubAdmins = () => {
     const { user } = useContext(AuthContext);
+    const { showConfirm } = useModal();
     const [search, setSearch] = useState('');
     const [subAdmins, setSubAdmins] = useState([]);
     const [zones, setZones] = useState([]);
@@ -61,7 +63,8 @@ const AdminSubAdmins = () => {
     };
 
     const handleDelete = async (id, name) => {
-        if (!window.confirm(`Are you sure you want to delete ${name}?`)) return;
+        const confirmed = await showConfirm({ title: 'Delete Sub-Admin', message: `Are you sure you want to delete "${name}"?`, confirmText: 'Delete', variant: 'danger' });
+        if (!confirmed) return;
         try {
             const res = await fetch(`${API_URL}/admin/subadmins/${id}`, {
                 method: 'DELETE',

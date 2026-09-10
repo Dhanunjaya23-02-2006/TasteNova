@@ -7,7 +7,7 @@ const getPageContent = async (req, res) => {
     try {
         const content = await PageContent.findOne({ pageSlug: req.params.slug });
         if (!content) {
-            return res.status(404).json({ message: 'Content not found' });
+            return res.json({ pageSlug: req.params.slug, title: '', content: '' });
         }
         res.json(content);
     } catch (error) {

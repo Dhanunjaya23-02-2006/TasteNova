@@ -2,10 +2,12 @@ import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
 import { API_URL } from '../../config';
 import { Plus, MessageSquare, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { useModal } from '../../components/ModalProvider';
 import toast from 'react-hot-toast';
 
 const ChefSupportPage = () => {
     const { user } = useContext(AuthContext);
+    const { showConfirm } = useModal();
     const [tickets, setTickets] = useState([]);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [formData, setFormData] = useState({
@@ -75,7 +77,8 @@ const ChefSupportPage = () => {
     };
 
     const handleCloseTicket = async () => {
-        if (!window.confirm('Are you sure you want to close this ticket?')) return;
+        const confirmed = await showConfirm({ title: 'Close Ticket', message: 'Are you sure you want to close this support ticket?', confirmText: 'Close Ticket', variant: 'warning' });
+        if (!confirmed) return;
         try {
             const res = await fetch(`${API_URL}/support/${activeTicket._id}/status`, {
                 method: 'PUT',

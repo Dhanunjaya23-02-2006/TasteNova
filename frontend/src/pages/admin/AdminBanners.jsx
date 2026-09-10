@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../../context/AuthContext';
+import { useModal } from '../../components/ModalProvider';
 import toast from 'react-hot-toast';
 import { API_URL } from '../../config';
 
 const AdminBanners = () => {
     const { user } = useContext(AuthContext);
+    const { showConfirm } = useModal();
     const [banners, setBanners] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [form, setForm] = useState({ title: '', imageUrl: '', linkUrl: '', startDate: '', endDate: '' });
@@ -31,7 +33,8 @@ const AdminBanners = () => {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Delete this banner?')) return;
+        const confirmed = await showConfirm({ title: 'Delete Banner', message: 'Are you sure you want to delete this banner?', confirmText: 'Delete', variant: 'danger' });
+        if (!confirmed) return;
         try {
             const res = await fetch(`${API_URL}/Admin/banners/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${user.token}` } });
             if (res.ok) { toast.success('Banner deleted'); fetchBanners(); }

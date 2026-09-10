@@ -67,6 +67,17 @@ const Navbar = () => {
     // RENDER FOR LOGGED-IN CUSTOMERS (THE NEW LAYOUT)
     if (isCustomerLoggedIn) {
 
+        const handleSearchSubmit = (e) => {
+            if (e.key === 'Enter' && e.target.value.trim()) {
+                navigate(`/chefs?search=${encodeURIComponent(e.target.value.trim())}`);
+            }
+        };
+
+        const isActive = (path) => {
+            if (path === '/') return location.pathname === '/';
+            return location.pathname.startsWith(path);
+        };
+
         return (
             <>
                 <nav className="navbar animate-fade-up" style={{ padding: '0 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -122,6 +133,7 @@ const Navbar = () => {
                             <input 
                                 type="text" 
                                 placeholder="Search food, chefs..." 
+                                onKeyDown={handleSearchSubmit}
                                 style={{ width: '100%', padding: '10px 10px 10px 36px', borderRadius: '20px', border: '1px solid var(--border)', background: 'var(--bg-surface)', outline: 'none', fontSize: '0.9rem' }}
                             />
                         </div>
@@ -161,7 +173,9 @@ const Navbar = () => {
                         
                         {/* Mobile Search/Cart Icons */}
                         <div className="show-on-mobile-flex" style={{ display: 'none', alignItems: 'center', gap: '16px' }}>
-                            <Search size={22} style={{ color: 'var(--text-main)' }} />
+                            <button onClick={() => navigate('/chefs')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-main)', padding: 0 }}>
+                                <Search size={22} />
+                            </button>
                             <Link to="/cart" style={{ position: 'relative', color: 'var(--text-main)' }}>
                                 <ShoppingBag size={22} />
                                 {cartCount > 0 && (
@@ -174,43 +188,47 @@ const Navbar = () => {
                     </div>
                 </nav>
 
-                {/* Mobile Bottom Navigation */}
-                <div className="show-on-mobile-flex" style={{
-                    display: 'none',
-                    position: 'fixed',
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    height: '70px',
-                    background: '#fff',
-                    borderTop: '1px solid var(--border-subtle)',
-                    zIndex: 1000,
-                    justifyContent: 'space-around',
-                    alignItems: 'center',
-                    boxShadow: '0 -4px 12px rgba(0,0,0,0.05)'
-                }}>
-                    <Link to="/" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: location.pathname === '/' ? 'var(--primary)' : 'var(--text-muted)', textDecoration: 'none' }}>
-                        <HomeIcon size={24} />
-                        <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>Home</span>
+                {/* ─── FLOATING PILL BOTTOM NAVBAR (Mobile) ─── */}
+                <nav className="mobile-floating-nav">
+                    <Link
+                        to="/"
+                        className={`mobile-floating-nav-item ${isActive('/') && location.pathname === '/' ? 'active' : ''}`}
+                    >
+                        <HomeIcon size={22} />
+                        <span>Home</span>
                     </Link>
-                    <Link to="/chefs" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: location.pathname === '/chefs' ? 'var(--primary)' : 'var(--text-muted)', textDecoration: 'none' }}>
-                        <Search size={24} />
-                        <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>Search</span>
+                    <Link
+                        to="/chefs"
+                        className={`mobile-floating-nav-item ${isActive('/chefs') || isActive('/chef/') || isActive('/categories') || isActive('/menu') ? 'active' : ''}`}
+                    >
+                        <Search size={22} />
+                        <span>Search</span>
                     </Link>
-                    <Link to="/cart" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: location.pathname === '/cart' ? 'var(--primary)' : 'var(--text-muted)', textDecoration: 'none', position: 'relative' }}>
-                        <ShoppingBag size={24} />
+                    <Link
+                        to="/account/orders"
+                        className={`mobile-floating-nav-item ${location.pathname.includes('/account/orders') || isActive('/cart') || isActive('/checkout') || isActive('/track') ? 'active' : ''}`}
+                    >
+                        <ShoppingBag size={22} />
+                        <span>Orders</span>
                         {cartCount > 0 && (
-                            <span style={{ position: 'absolute', top: '-5px', right: '-8px', background: 'var(--primary)', color: '#fff', fontSize: '0.6rem', padding: '2px 5px', borderRadius: '10px', fontWeight: 'bold' }}>
-                                {cartCount}
-                            </span>
+                            <span className="mobile-floating-nav-badge">{cartCount}</span>
                         )}
-                        <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>Cart</span>
                     </Link>
-                    <Link to="/account" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: location.pathname.includes('/account') ? 'var(--primary)' : 'var(--text-muted)', textDecoration: 'none' }}>
-                        <UserIcon size={24} />
-                        <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>Profile</span>
+                    <Link
+                        to="/account/favourites"
+                        className={`mobile-floating-nav-item ${location.pathname.includes('/account/favourites') ? 'active' : ''}`}
+                    >
+                        <Heart size={22} />
+                        <span>Favorites</span>
                     </Link>
-                </div>
+                    <Link
+                        to="/account"
+                        className={`mobile-floating-nav-item ${location.pathname === '/account' || location.pathname === '/account/' || (location.pathname.includes('/account/') && !location.pathname.includes('/orders') && !location.pathname.includes('/favourites')) ? 'active' : ''}`}
+                    >
+                        <UserIcon size={22} />
+                        <span>Profile</span>
+                    </Link>
+                </nav>
                 
                 <LocationPickerModal 
                     isOpen={isLocationModalOpen}

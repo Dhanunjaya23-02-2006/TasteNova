@@ -7,7 +7,7 @@ import { useAuthStore } from '../../store/authStore';
 
 export default function VerifyOtpScreen() {
   const router = useRouter();
-  const { email } = useLocalSearchParams();
+  const { name, email, phone, password, role } = useLocalSearchParams();
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuthStore();
@@ -21,12 +21,17 @@ export default function VerifyOtpScreen() {
     setLoading(true);
     try {
       const res = await api.post('/auth/verify-otp', { 
+        name,
         email, 
-        otp 
+        phone,
+        password,
+        role,
+        emailOtp: otp 
       });
       
-      if (res.data.token && res.data.user) {
-        await signIn(res.data.token, res.data.user);
+      if (res.data.accessToken) {
+        const { accessToken, ...userData } = res.data;
+        await signIn(accessToken, userData);
         // Root layout will auto-redirect to (tabs) once token is set
       }
     } catch (error: any) {
