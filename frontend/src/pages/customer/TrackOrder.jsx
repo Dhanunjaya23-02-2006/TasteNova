@@ -223,26 +223,8 @@ const TrackOrder = () => {
                         </div>
                     </div>
 
-                    {/* Delivery Partner Info (If out for delivery) */}
-                    {!isCancelled && activeStep >= 3 && order.deliveryPartner && (
-                        <div style={{ background: 'var(--bg-card)', borderRadius: '16px', padding: '24px', boxShadow: 'var(--shadow-card)', border: '1px solid var(--border-subtle)' }}>
-                            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: 700, marginBottom: '16px' }}>Delivery Partner</h3>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-                                <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(46, 213, 115, 0.1)', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#2ed573' }}>
-                                    <Bike size={24} />
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                    <h4 style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '1.05rem', marginBottom: '4px' }}>
-                                        {order.deliveryPartner.name}
-                                    </h4>
-                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Vaccinated • 4.8★</p>
-                                </div>
-                                <a href={`tel:${order.deliveryPartner.phone}`} style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--text-main)' }}>
-                                    <PhoneCall size={18} />
-                                </a>
-                            </div>
-                        </div>
-                    )}
+
+
 
                     {/* Order Summary */}
                     <div style={{ background: 'var(--bg-card)', borderRadius: '16px', padding: '24px', boxShadow: 'var(--shadow-card)', border: '1px solid var(--border-subtle)' }}>

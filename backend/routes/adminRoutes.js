@@ -38,9 +38,6 @@ router.get('/customers', opsCtrl.getCustomers);
 router.get('/customers/:id', opsCtrl.getCustomerById);
 router.put('/customers/:id/suspend', opsCtrl.suspendCustomer);
 
-router.get('/delivery', opsCtrl.getDeliveryPartners);
-router.put('/delivery/:id/status', opsCtrl.updateDeliveryStatus);
-
 router.get('/promotions', opsCtrl.getPromotions);
 router.post('/promotions', opsCtrl.createPromotion);
 router.put('/promotions/:id', opsCtrl.updatePromotion);

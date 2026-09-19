@@ -4,11 +4,11 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
 const generateAccessToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '15m' });
 };
 
 const generateRefreshToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '30d' });
+    return jwt.sign({ id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 };
 
 const setAuthCookies = (res, accessToken, refreshToken) => {
@@ -17,7 +17,7 @@ const setAuthCookies = (res, accessToken, refreshToken) => {
         httpOnly: true,
         secure: isProd,
         sameSite: isProd ? 'strict' : 'lax',
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days (match token expiry)
+        maxAge: 15 * 60 * 1000, // 15 minutes
     });
 
     if (refreshToken) {
@@ -25,7 +25,7 @@ const setAuthCookies = (res, accessToken, refreshToken) => {
             httpOnly: true,
             secure: isProd,
             sameSite: isProd ? 'strict' : 'lax',
-            maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
     }
 };
@@ -63,9 +63,14 @@ const authUser = async (req, res) => {
             const accessToken = generateAccessToken(user._id);
             const refreshToken = generateRefreshToken(user._id);
 
-            // Save refresh token to user in DB
+            // Save refresh token to user in DB, cap at 5 sessions
             const updateData = {
-                $push: { refreshTokens: refreshToken }
+                $push: { 
+                    refreshTokens: { 
+                        $each: [refreshToken], 
+                        $slice: -5 // keep only the last 5 tokens
+                    } 
+                }
             };
 
             // Force kitchen closed on new login session so they have to manually open it
@@ -132,13 +137,11 @@ const verifyOtp = async (req, res) => {
             let assignedRole = 'user';
             let status = 'active';
             const userCount = await User.countDocuments({});
-            const superadminExists = await User.findOne({ role: 'superadmin' });
-            const adminExists = await User.findOne({ role: 'admin' });
 
-            if (userCount === 0 || (role === 'superadmin' && !superadminExists)) {
+            // Fix Role Escalation Vulnerability
+            // ONLY the very first user gets superadmin. Everyone else must be invited/updated by an existing superadmin.
+            if (userCount === 0) {
                 assignedRole = 'superadmin';
-            } else if (role === 'admin' && !adminExists) {
-                assignedRole = 'admin';
             } else if (role === 'delivery') {
                 assignedRole = 'delivery';
                 status = 'pending';
@@ -250,15 +253,21 @@ const refreshToken = async (req, res) => {
             return res.status(403).json({ message: 'Invalid refresh token' });
         }
 
+        // Token Rotation (Remove old refresh token, generate new one)
+        user.refreshTokens = user.refreshTokens.filter(rt => rt !== token);
+
         const newAccessToken = generateAccessToken(user._id);
-        
-        // Optional: Token Rotation (Remove old refresh token, generate new one)
-        // For simplicity and to avoid race conditions with multiple concurrent requests from same user,
-        // we'll keep the same refresh token until it expires, but this can be enhanced.
+        const newRefreshToken = generateRefreshToken(user._id);
 
-        setAuthCookies(res, newAccessToken, null); // Don't overwrite refresh token cookie here unless rotating
+        user.refreshTokens.push(newRefreshToken);
+        if (user.refreshTokens.length > 5) {
+            user.refreshTokens = user.refreshTokens.slice(-5);
+        }
+        await user.save();
 
-        res.json({ accessToken: newAccessToken });
+        setAuthCookies(res, newAccessToken, newRefreshToken);
+
+        res.json({ accessToken: newAccessToken, refreshToken: newRefreshToken });
     } catch (error) {
         // Token might be expired or malformed.
         // We should remove it from the DB if we know who the user is, but here we just return 403.

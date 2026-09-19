@@ -39,7 +39,7 @@ const admin = (req, res, next) => {
     if (req.user && (req.user.role === 'admin' || req.user.role === 'superadmin')) {
         next();
     } else {
-        res.status(401).json({ message: 'Not authorized as an admin' });
+        res.status(403).json({ message: 'Not authorized as an admin' });
     }
 };
 
@@ -47,7 +47,7 @@ const chef = (req, res, next) => {
     if (req.user && (req.user.role === 'chef' || req.user.role === 'admin' || req.user.role === 'superadmin')) {
         next();
     } else {
-        res.status(401).json({ message: 'Not authorized as a chef' });
+        res.status(403).json({ message: 'Not authorized as a chef' });
     }
 };
 
@@ -55,7 +55,7 @@ const delivery = (req, res, next) => {
     if (req.user && (req.user.role === 'delivery' || req.user.role === 'admin' || req.user.role === 'superadmin')) {
         next();
     } else {
-        res.status(401).json({ message: 'Not authorized as delivery partner' });
+        res.status(403).json({ message: 'Not authorized as delivery partner' });
     }
 };
 
@@ -63,7 +63,7 @@ const superAdmin = (req, res, next) => {
     if (req.user && req.user.role === 'superadmin') {
         next();
     } else {
-        res.status(401).json({ message: 'Not authorized as a SUPERADMIN' });
+        res.status(403).json({ message: 'Not authorized as a SUPERADMIN' });
     }
 };
 
@@ -72,7 +72,7 @@ const subadmin = (req, res, next) => {
     if (req.user && ['subadmin', 'admin', 'superadmin'].includes(req.user.role)) {
         next();
     } else {
-        res.status(401).json({ message: 'Not authorized as a Sub-Admin' });
+        res.status(403).json({ message: 'Not authorized as a Sub-Admin' });
     }
 };
 

@@ -3,13 +3,18 @@ const crypto = require('crypto');
 
 const createOrder = async (req, res) => {
     try {
+        const amount = parseFloat(req.body.amount);
+        if (isNaN(amount) || amount <= 0) {
+            return res.status(400).json({ message: "Invalid payment amount" });
+        }
+
         const instance = new Razorpay({
             key_id: process.env.RAZORPAY_KEY_ID,
             key_secret: process.env.RAZORPAY_KEY_SECRET,
         });
 
         const options = {
-            amount: req.body.amount * 100, // amount in smallest currency unit
+            amount: Math.round(amount * 100), // amount in smallest currency unit, ensure integer
             currency: "INR",
             receipt: crypto.randomBytes(10).toString('hex'),
         };

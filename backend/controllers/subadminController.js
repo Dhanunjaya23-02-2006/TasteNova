@@ -25,8 +25,8 @@ const getDashboard = async (req, res) => {
             activePromotions
         ] = await Promise.all([
             Order.find({ ...cityFilter, createdAt: { $gte: today } }),
-            User.countDocuments({ ...cityFilter, role: 'chef', status: 'active' }),
-            User.countDocuments({ ...cityFilter, role: 'chef', status: 'pending' }),
+            User.countDocuments({ ...cityFilter, role: 'chef', status: 'active', superAdminApproved: true }),
+            User.countDocuments({ ...cityFilter, role: 'chef', status: 'pending', superAdminApproved: true }),
             User.countDocuments({ ...cityFilter, role: 'delivery', status: 'active' }),
             User.countDocuments({ ...cityFilter, role: 'user' }),
             SupportTicket.countDocuments({ ...cityFilter, status: { $in: ['open', 'in_progress'] } }),
@@ -84,7 +84,6 @@ const getOrders = async (req, res) => {
         const orders = await Order.find(filter)
             .populate('user', 'name phone email')
             .populate('chef', 'name kitchenName')
-            .populate('deliveryPartner', 'name phone')
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(Number(limit));
@@ -102,7 +101,6 @@ const getOrderById = async (req, res) => {
         const order = await Order.findOne({ _id: req.params.id, ...req.cityFilter })
             .populate('user', 'name phone email addresses')
             .populate('chef', 'name kitchenName phone')
-            .populate('deliveryPartner', 'name phone')
             .populate('orderItems.menuItem', 'name');
         if (!order) return res.status(404).json({ message: 'Order not found in your city' });
         res.json(order);
@@ -133,7 +131,7 @@ const cancelOrder = async (req, res) => {
 const getChefs = async (req, res) => {
     try {
         const { status, page = 1, limit = 20, search } = req.query;
-        const filter = { ...req.cityFilter, role: 'chef' };
+        const filter = { ...req.cityFilter, role: 'chef', superAdminApproved: true };
         if (status && status !== 'All') filter.status = status;
         if (search) {
             filter.$or = [
@@ -163,48 +161,15 @@ const updateChefStatus = async (req, res) => {
         if (!chef) return res.status(404).json({ message: 'Chef not found in your city' });
 
         chef.status = status;
+        // Regional admins cannot re-approve a chef — only suspend/unsuspend
+        if (!chef.superAdminApproved) {
+            return res.status(403).json({ message: 'Chef must be approved by Super Admin first' });
+        }
         await chef.save();
         if (req.app.get('io')) req.app.get('io').emit('admin_refresh');
         res.json({ message: `Chef status updated to ${status}`, chef: { _id: chef._id, name: chef.name, status: chef.status } });
     } catch (error) {
         res.status(500).json({ message: 'Error updating chef status', error: error.message });
-    }
-};
-
-// ========================
-// DELIVERY PARTNERS
-// ========================
-const getDeliveryPartners = async (req, res) => {
-    try {
-        const { status, page = 1, limit = 20 } = req.query;
-        const filter = { ...req.cityFilter, role: 'delivery' };
-        if (status && status !== 'All') filter.status = status;
-
-        const partners = await User.find(filter)
-            .select('-password -refreshTokens')
-            .sort({ createdAt: -1 })
-            .skip((page - 1) * limit)
-            .limit(Number(limit));
-
-        const total = await User.countDocuments(filter);
-        res.json({ partners, total, page: Number(page), pages: Math.ceil(total / limit) });
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching delivery partners', error: error.message });
-    }
-};
-
-const updateDeliveryStatus = async (req, res) => {
-    try {
-        const { status } = req.body;
-        const partner = await User.findOne({ _id: req.params.id, ...req.cityFilter, role: 'delivery' });
-        if (!partner) return res.status(404).json({ message: 'Delivery partner not found in your city' });
-
-        partner.status = status;
-        await partner.save();
-        if (req.app.get('io')) req.app.get('io').emit('admin_refresh');
-        res.json({ message: `Delivery partner status updated to ${status}` });
-    } catch (error) {
-        res.status(500).json({ message: 'Error updating delivery partner status', error: error.message });
     }
 };
 
@@ -579,8 +544,8 @@ const getAnalytics = async (req, res) => {
 
         // Chef analytics
         const [activeChefs, topChefs] = await Promise.all([
-            User.countDocuments({ ...cityFilter, role: 'chef', status: 'active' }),
-            User.find({ ...cityFilter, role: 'chef', status: 'active' }).sort({ rating: -1 }).limit(5).select('name kitchenName rating numReviews')
+            User.countDocuments({ ...cityFilter, role: 'chef', status: 'active', superAdminApproved: true }),
+            User.find({ ...cityFilter, role: 'chef', status: 'active', superAdminApproved: true }).sort({ rating: -1 }).limit(5).select('name kitchenName rating numReviews')
         ]);
 
         // Coupon / Promo analytics
@@ -680,7 +645,7 @@ module.exports = {
     getDashboard,
     getOrders, getOrderById, cancelOrder,
     getChefs, updateChefStatus,
-    getDeliveryPartners, updateDeliveryStatus,
+
     getCustomers, getCustomerById, suspendCustomer,
     getPromotions, createPromotion, updatePromotion,
     getBanners, createBanner, updateBanner, deleteBanner,

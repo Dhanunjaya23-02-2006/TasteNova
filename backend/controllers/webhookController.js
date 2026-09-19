@@ -6,7 +6,11 @@ const ChefBooking = require('../models/ChefBooking');
 // @route   POST /api/webhooks/razorpay
 // @access  Public
 const handleRazorpayWebhook = async (req, res) => {
-    const secret = process.env.RAZORPAY_WEBHOOK_SECRET || 'your_webhook_secret_here';
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    if (!secret) {
+        console.error('Webhook secret is not defined');
+        return res.status(500).send('Internal Server Error');
+    }
     
     // Verify signature
     const signature = req.headers['x-razorpay-signature'];

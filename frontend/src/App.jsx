@@ -9,6 +9,7 @@ import SubadminLayout from './components/SubadminLayout';
 import AdminLayout from './components/AdminLayout';
 import SuperadminLayout from './components/SuperadminLayout';
 import ChefLayout from './components/ChefLayout';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy loaded pages
 const Home = React.lazy(() => import('./pages/public/Home'));
@@ -149,12 +150,26 @@ const ProtectedRoute = ({ children }) => {
   return <PageWrapper>{children}</PageWrapper>;
 };
 
+const RoleRoute = ({ children, allowedRoles }) => {
+  const { user } = useContext(AuthContext);
+  if (!user) return <Navigate to="/login" replace />;
+  if (!allowedRoles.includes(user.role)) {
+    // Redirect based on what role they actually have
+    if (user.role === 'superadmin') return <Navigate to="/superadmin" replace />;
+    if (user.role === 'admin') return <Navigate to="/admin" replace />;
+    if (user.role === 'subadmin') return <Navigate to="/subadmin" replace />;
+    if (user.role === 'chef') return <Navigate to="/chef/dashboard" replace />;
+    return <Navigate to="/" replace />;
+  }
+  return <PageWrapper>{children}</PageWrapper>;
+};
+
 function App() {
   const location = useLocation();
-  const isSubadmin = location.pathname.startsWith('/subadmin');
-  const isAdmin = location.pathname.startsWith('/admin');
-  const isSuperadmin = location.pathname.startsWith('/superadmin');
-  const isChef = location.pathname.startsWith('/chef') && !location.pathname.startsWith('/chef/register') && location.pathname !== '/chefs';
+  const isSubadmin = location.pathname.toLowerCase().startsWith('/subadmin');
+  const isAdmin = location.pathname.toLowerCase().startsWith('/admin');
+  const isSuperadmin = location.pathname.toLowerCase().startsWith('/superadmin');
+  const isChef = location.pathname.toLowerCase().startsWith('/chef') && !location.pathname.toLowerCase().startsWith('/chef/register') && location.pathname.toLowerCase() !== '/chefs';
   const hideGlobalNav = isSubadmin || isAdmin || isSuperadmin || isChef;
   
   // Use a base key for dashboards to prevent unmounting the entire layout on sub-route changes
@@ -165,6 +180,7 @@ function App() {
       <Toaster position="top-right" />
       {!hideGlobalNav && <Navbar />}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <ErrorBoundary>
         <AnimatePresence mode="wait">
           <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}><div className="loading-spinner" style={{ width: '40px', height: '40px', border: '3px solid rgba(212, 175, 55, 0.2)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div><style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style></div>}>
             <Routes location={location} key={routesKey}>
@@ -197,7 +213,7 @@ function App() {
               
               {/* Chef Dashboard Routes */}
               <Route path="/chef-dashboard" element={<Navigate to="/chef/dashboard" replace />} />
-              <Route path="/chef" element={<ChefLayout />}>
+              <Route path="/chef" element={<RoleRoute allowedRoles={['chef', 'admin', 'superadmin']}><ChefLayout /></RoleRoute>}>
                 <Route index element={<Navigate to="dashboard" replace />} />
                 <Route path="dashboard" element={<ChefDashboardPage />} />
                 <Route path="orders" element={<ChefOrdersPage />} />
@@ -226,7 +242,7 @@ function App() {
               {/* Subadmin Routes */}
 
               {/* Subadmin Routes */}
-            <Route path="/subadmin" element={<SubadminLayout />}>
+            <Route path="/subadmin" element={<RoleRoute allowedRoles={['subadmin', 'admin', 'superadmin']}><SubadminLayout /></RoleRoute>}>
               <Route index element={<SubadminDashboard />} />
               <Route path="orders" element={<SubadminOrders />} />
               <Route path="chefs" element={<SubadminChefs />} />
@@ -243,7 +259,7 @@ function App() {
             </Route>
 
             {/* Admin Routes */}
-            <Route path="/admin" element={<AdminLayout />}>
+            <Route path="/admin" element={<RoleRoute allowedRoles={['admin', 'superadmin']}><AdminLayout /></RoleRoute>}>
               <Route index element={<AdminDashboard />} />
               <Route path="zones" element={<AdminZones />} />
               <Route path="subadmins" element={<AdminSubAdmins />} />
@@ -263,7 +279,7 @@ function App() {
             </Route>
 
               {/* Super-Admin Routes */}
-              <Route path="/superadmin" element={<SuperadminLayout />}>
+              <Route path="/superadmin" element={<RoleRoute allowedRoles={['superadmin']}><SuperadminLayout /></RoleRoute>}>
                 <Route index element={<SuperadminDashboard />} />
                 <Route path="cities" element={<SuperadminCities />} />
                 <Route path="subadmins" element={<SuperadminSubAdmins />} />
@@ -300,6 +316,7 @@ function App() {
             </Routes>
           </Suspense>
         </AnimatePresence>
+        </ErrorBoundary>
       </main>
       {!hideGlobalNav && <Footer />}
     </div>

@@ -44,7 +44,7 @@ const AdminProfile = () => {
                     <div>
                         <h2 style={{ margin: '0 0 4px 0', fontFamily: "'DM Serif Display', serif", fontSize: '1.6rem' }}>{user.name}</h2>
                         <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Shield size={14} /> City Sub-Admin
+                            <Shield size={14} /> Regional Admin
                         </div>
                     </div>
                 </div>

@@ -20,6 +20,8 @@ const AdminCitySettings = () => {
         deliveryRadius: 10
     });
 
+    const [noCityAssigned, setNoCityAssigned] = useState(false);
+
     const fetchCitySettings = async () => {
         setLoading(true);
         try {
@@ -38,8 +40,14 @@ const AdminCitySettings = () => {
                     commissionRate: data.commissionRate || 0,
                     deliveryRadius: data.deliveryRadius || 10
                 });
+                setNoCityAssigned(false);
             } else {
-                toast.error('Failed to load city settings');
+                const data = await res.json().catch(() => ({}));
+                if (res.status === 400 && data.message === 'No city assigned to this admin') {
+                    setNoCityAssigned(true);
+                } else {
+                    toast.error(data.message || 'Failed to load city settings');
+                }
             }
         } catch (e) {
             toast.error('Error fetching city settings');
@@ -79,6 +87,21 @@ const AdminCitySettings = () => {
 
     if (loading) {
         return <div className="sa-empty">Loading settings...</div>;
+    }
+
+    if (noCityAssigned) {
+        return (
+            <div className="animate-fade-up">
+                <div className="sa-page-header">
+                    <div>
+                        <h1>City Configuration</h1>
+                    </div>
+                </div>
+                <div className="sa-empty" style={{ marginTop: '24px' }}>
+                    No city has been assigned to your account yet. Please contact the Super Admin.
+                </div>
+            </div>
+        );
     }
 
     return (

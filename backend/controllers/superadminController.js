@@ -221,7 +221,7 @@ const createSubAdmin = async (req, res) => {
 // ========================
 const getVerificationQueue = async (req, res) => {
     try {
-        const chefs = await User.find({ role: 'chef', status: 'pending' }).populate('city', 'name');
+        const chefs = await User.find({ role: 'chef', $or: [{ status: 'pending' }, { superAdminApproved: { $ne: true } }] }).populate('city', 'name');
         const delivery = await User.find({ role: 'delivery', status: 'pending' }).populate('city', 'name');
         res.json({ chefs, delivery });
     } catch (error) {
@@ -236,6 +236,10 @@ const verifyUser = async (req, res) => {
         if (!user) return res.status(404).json({ message: 'User not found' });
         
         user.status = status;
+        // When super admin approves a chef, mark them as superAdminApproved
+        if (status === 'active' && user.role === 'chef') {
+            user.superAdminApproved = true;
+        }
         await user.save();
         await logAction(req.user._id, 'VERIFY_USER', 'User', user._id, user.city, `Set ${user.role} ${user.name} to ${status}. Note: ${note || 'None'}`);
         if (req.app.get('io')) req.app.get('io').emit('superadmin_refresh');
@@ -276,7 +280,6 @@ const getOrders = async (req, res) => {
         const orders = await Order.find(filter)
             .populate('user', 'name phone email')
             .populate('chef', 'name kitchenName')
-            .populate('deliveryPartner', 'name phone')
             .populate('city', 'name')
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
@@ -315,34 +318,6 @@ const getChefs = async (req, res) => {
         res.json({ chefs, total, page: Number(page), pages: Math.ceil(total / limit) });
     } catch (error) {
         res.status(500).json({ message: 'Error fetching chefs', error: error.message });
-    }
-};
-
-const getDelivery = async (req, res) => {
-    try {
-        const { page = 1, limit = 20, city, status, search } = req.query;
-        const filter = { role: 'delivery' };
-        if (city && city !== 'All') filter.city = city;
-        if (status && status !== 'All') filter.status = status;
-        if (search) {
-            filter.$or = [
-                { name: { $regex: search, $options: 'i' } },
-                { email: { $regex: search, $options: 'i' } },
-                { phone: { $regex: search, $options: 'i' } }
-            ];
-        }
-
-        const partners = await User.find(filter)
-            .select('-password -refreshTokens')
-            .populate('city', 'name')
-            .sort({ createdAt: -1 })
-            .skip((page - 1) * limit)
-            .limit(Number(limit));
-
-        const total = await User.countDocuments(filter);
-        res.json({ partners, total, page: Number(page), pages: Math.ceil(total / limit) });
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching delivery partners', error: error.message });
     }
 };
 
@@ -1180,7 +1155,7 @@ module.exports = {
     getSubAdmins, createSubAdmin, updateSubAdmin,
     getVerificationQueue, verifyUser,
     getAuditLogs,
-    getOrders, getChefs, getDelivery, getCustomers, getCustomerStats, getCustomerDetail, updateCustomerStatus, getSupportTickets,
+    getOrders, getChefs, getCustomers, getCustomerStats, getCustomerDetail, updateCustomerStatus, getSupportTickets,
     getRevenue, getCommissions, updateGlobalCommission, updateChefCommission,
     getPayouts, processBatchPayout, getRefunds, updateRefundStatus,
     getTaxes, createTax, updateTax, getWallets,

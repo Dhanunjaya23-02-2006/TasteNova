@@ -58,52 +58,9 @@ const deleteCategory = async (req, res) => {
     }
 };
 
-// @desc    Get global delivery settings
-// @route   GET /api/platform/delivery-settings
-// @access  Public
-const getDeliverySettings = async (req, res) => {
-    try {
-        let setting = await GlobalSetting.findOne({ key: 'delivery_charges' });
-        if (!setting) {
-            setting = new GlobalSetting({
-                key: 'delivery_charges',
-                value: { baseDeliveryFee: 40, perKmFee: 10, freeDeliveryThreshold: 500 },
-                description: 'Global fallback delivery settings'
-            });
-            await setting.save();
-        }
-        res.json(setting.value);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// @desc    Update global delivery settings
-// @route   PUT /api/platform/delivery-settings
-// @access  Private/SuperAdmin
-const updateDeliverySettings = async (req, res) => {
-    try {
-        const { baseDeliveryFee, perKmFee, freeDeliveryThreshold } = req.body;
-        
-        let setting = await GlobalSetting.findOne({ key: 'delivery_charges' });
-        if (!setting) {
-            setting = new GlobalSetting({ key: 'delivery_charges', value: {} });
-        }
-        
-        setting.value = { baseDeliveryFee, perKmFee, freeDeliveryThreshold };
-        await setting.save();
-        
-        res.json(setting.value);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
 module.exports = {
     getCategories,
     createCategory,
     updateCategory,
-    deleteCategory,
-    getDeliverySettings,
-    updateDeliverySettings
+    deleteCategory
 };

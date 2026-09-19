@@ -39,18 +39,18 @@ const userSchema = mongoose.Schema({
         deliveryInstructions: { type: String },
         isDefault: { type: Boolean, default: false }
     }],
+    /*
+    // REMOVED for PCI compliance. Do not store raw cards.
     paymentMethods: [{
-        cardNumber: { type: String, required: true }, // Should store masked or token in prod
+        cardNumber: { type: String, required: true },
         cardName: { type: String, required: true },
         expiryDate: { type: String, required: true },
         cardType: { type: String, default: 'VISA' },
         isDefault: { type: Boolean, default: false }
     }],
+    */
     isEmailVerified: { type: Boolean, default: false },
     isPhoneVerified: { type: Boolean, default: false },
-    emailOtp: { type: String },
-    phoneOtp: { type: String },
-    resetPasswordOtp: { type: String },
     otpExpires: { type: Date },
     documents: {
         idProof: { type: String },
@@ -68,6 +68,7 @@ const userSchema = mongoose.Schema({
     isKitchenVerified: { type: Boolean, default: false },
     fssaiNumber: { type: String },
     isPinned: { type: Boolean, default: false }, // Manually featured by SuperAdmin
+    superAdminApproved: { type: Boolean, default: false }, // Chef must be approved by SuperAdmin before visible to regional admins/customers
     
     // Kitchen Location for Geospatial Queries
     kitchenLocation: {

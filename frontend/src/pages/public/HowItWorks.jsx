@@ -60,8 +60,8 @@ const HowItWorks = () => {
                         <div style={{ width: '80px', height: '80px', background: '#FCE4EC', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
                             <Bike size={40} color="#C2185B" />
                         </div>
-                        <h3>4. Fast Delivery</h3>
-                        <p style={{ color: 'var(--text-muted)', marginTop: '10px' }}>Our delivery partners bring the hot, hygienic food straight to your doorstep.</p>
+                        <h3>4. Fresh to Your Door</h3>
+                        <p style={{ color: 'var(--text-muted)', marginTop: '10px' }}>Your order is carefully packed and delivered fresh, hot, and hygienic — straight to your doorstep.</p>
                     </div>
                 </div>
             )}

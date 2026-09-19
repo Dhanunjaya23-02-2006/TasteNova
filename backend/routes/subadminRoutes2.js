@@ -18,10 +18,6 @@ router.put('/orders/:id/cancel', ctrl.cancelOrder);
 router.get('/chefs', ctrl.getChefs);
 router.put('/chefs/:id/status', ctrl.updateChefStatus);
 
-// Delivery Partners
-router.get('/delivery', ctrl.getDeliveryPartners);
-router.put('/delivery/:id/status', ctrl.updateDeliveryStatus);
-
 // Customers
 router.get('/customers', ctrl.getCustomers);
 router.get('/customers/:id', ctrl.getCustomerById);

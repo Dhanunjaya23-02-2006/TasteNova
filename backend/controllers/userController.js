@@ -437,7 +437,7 @@ const getFeaturedChefs = async (req, res) => {
                     distanceField: "distance",
                     key: "kitchenLocation",
                     spherical: true,
-                    query: { role: 'chef', status: 'active', isOpen: true },
+                    query: { role: 'chef', status: 'active', isOpen: true, superAdminApproved: true },
                     distanceMultiplier: 0.001 // Convert meters to km
                 }
             },
@@ -476,7 +476,7 @@ const getAllChefs = async (req, res) => {
             try {
                 const { APIFeatures, sendPaginatedResponse } = require('../utils/apiFeatures');
                 const features = new APIFeatures(
-                    User.find({ role: 'chef', status: 'active', isOpen: true }).select('-password'),
+                    User.find({ role: 'chef', status: 'active', isOpen: true, superAdminApproved: true }).select('-password'),
                     req.query
                 )
                     .filter()
@@ -492,7 +492,7 @@ const getAllChefs = async (req, res) => {
                 return await sendPaginatedResponse(res, features, User); 
             } catch (paginationError) {
                 // Fallback: simple query if pagination utility fails
-                const chefs = await User.find({ role: 'chef', status: 'active', isOpen: true })
+                const chefs = await User.find({ role: 'chef', status: 'active', isOpen: true, superAdminApproved: true })
                     .select('-password')
                     .sort({ isPinned: -1, rating: -1 })
                     .limit(50);
@@ -507,7 +507,7 @@ const getAllChefs = async (req, res) => {
                     distanceField: "distance",
                     key: "kitchenLocation",
                     spherical: true,
-                    query: { role: 'chef', status: 'active', isOpen: true },
+                    query: { role: 'chef', status: 'active', isOpen: true, superAdminApproved: true },
                     distanceMultiplier: 0.001 // Convert meters to km
                 }
             },
@@ -749,62 +749,14 @@ const deleteAddress = async (req, res) => {
 // @route   POST /api/users/payment-methods
 // @access  Private
 const addPaymentMethod = async (req, res) => {
-    try {
-        const { cardNumber, cardName, expiryDate, cardType, isDefault } = req.body;
-        const user = await User.findById(req.user._id);
-
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        // If this is set to default, unset others
-        if (isDefault) {
-            user.paymentMethods.forEach(pm => pm.isDefault = false);
-        }
-
-        const newPaymentMethod = {
-            cardNumber,
-            cardName,
-            expiryDate,
-            cardType: cardType || 'VISA',
-            isDefault: isDefault || (user.paymentMethods.length === 0)
-        };
-
-        user.paymentMethods.push(newPaymentMethod);
-        await user.save();
-
-        res.status(201).json({ message: 'Payment method added', paymentMethods: user.paymentMethods });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+    res.status(400).json({ message: 'Saving raw cards is disabled for PCI compliance.' });
 };
 
 // @desc    Delete a payment method from user profile
 // @route   DELETE /api/users/payment-methods/:id
 // @access  Private
 const deletePaymentMethod = async (req, res) => {
-    try {
-        const user = await User.findById(req.user._id);
-
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        user.paymentMethods = user.paymentMethods.filter(
-            (pm) => pm._id.toString() !== req.params.id
-        );
-
-        // If we deleted the default one and there are others left, make the first one default
-        if (user.paymentMethods.length > 0 && !user.paymentMethods.some(pm => pm.isDefault)) {
-            user.paymentMethods[0].isDefault = true;
-        }
-
-        await user.save();
-
-        res.json({ message: 'Payment method removed', paymentMethods: user.paymentMethods });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+    res.status(400).json({ message: 'Disabled.' });
 };
 
 // @desc    Get user favourites (following chefs)

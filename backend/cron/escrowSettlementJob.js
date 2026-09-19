@@ -49,15 +49,6 @@ const startEscrowSettlementJob = () => {
                             }
                         }
 
-                        // Settle Delivery Escrow
-                        if (order.deliveryPartner && order.deliveryPartnerPayout > 0) {
-                            const Wallet = require('../models/Wallet');
-                            const deliveryWallet = await Wallet.findOne({ user_id: order.deliveryPartner });
-                            if (deliveryWallet) {
-                                await walletService.settleEscrow(deliveryWallet._id, order.deliveryPartnerPayout, `${idempotencyKey}_delivery`, 'System_Cron');
-                            }
-                        }
-
                         // Update order status
                         order.escrow_status = 'settled';
                         await order.save();

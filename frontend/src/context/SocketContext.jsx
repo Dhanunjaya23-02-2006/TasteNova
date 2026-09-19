@@ -12,8 +12,17 @@ export const SocketProvider = ({ children }) => {
     useEffect(() => {
         if (!user) return;
 
-        const newSocket = io(API_URL.replace('/api', ''), {
-            auth: { token: user.token }
+        const socketUrl = import.meta.env.VITE_SOCKET_URL || API_URL.replace('/api', '');
+        const newSocket = io(socketUrl, {
+            auth: { token: user.token },
+            reconnectionAttempts: 10,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            timeout: 20000,
+        });
+
+        newSocket.on('connect_error', (err) => {
+            console.error('Socket connection error:', err.message);
         });
 
         newSocket.on('connect', () => {

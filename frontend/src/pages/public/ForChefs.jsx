@@ -51,7 +51,7 @@ const ForChefs = () => {
                     <div style={{ background: 'var(--bg-surface)', padding: '30px', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
                         <Users size={40} color="var(--primary)" style={{ marginBottom: '20px' }} />
                         <h3>We Handle Logistics</h3>
-                        <p style={{ color: 'var(--text-muted)' }}>You focus on cooking; our platform handles marketing, orders, and delivery.</p>
+                        <p style={{ color: 'var(--text-muted)' }}>You focus on cooking; our platform handles marketing, orders, and logistics.</p>
                     </div>
                     <div style={{ background: 'var(--bg-surface)', padding: '30px', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
                         <ShieldCheck size={40} color="var(--primary)" style={{ marginBottom: '20px' }} />

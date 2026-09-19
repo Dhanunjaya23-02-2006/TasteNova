@@ -125,30 +125,6 @@ const updateOrderToPaid = async (req, res) => {
             io.to('chef_' + updatedOrder.chef).emit('new_order_alert', updatedOrder);
         }
 
-        // 90-second Auto Cancel logic for Instant orders
-        if (!updatedOrder.orderType || updatedOrder.orderType === 'Instant') {
-            setTimeout(async () => {
-                try {
-                    const checkOrder = await Order.findById(updatedOrder._id);
-                    if (checkOrder && checkOrder.status === 'Placed') {
-                        checkOrder.status = 'Rejected';
-                        checkOrder.refundStatus = 'Pending';
-                        checkOrder.refundAmount = checkOrder.totalPrice;
-                        await checkOrder.save();
-                        
-                        // Notify Chef it expired
-                        if (io) {
-                            io.to('chef_' + checkOrder.chef).emit('order_expired', checkOrder._id);
-                            // Optionally emit to customer room if they join one, or rely on them polling/socket
-                            io.to(checkOrder._id.toString()).emit('receive_message', { system: true, message: 'Order was automatically cancelled as the chef is currently unavailable.' });
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error in auto-cancel timeout:', error);
-                }
-            }, 90000);
-        }
-
         res.json(updatedOrder);
     } else {
         res.status(404).json({ message: 'Order not found' });
@@ -308,9 +284,35 @@ const getChefStats = async (req, res) => {
     try {
         const chefId = req.user._id;
 
-        // Fetch orders for this chef
-        const orders = await Order.find({ chef: chefId });
+        // Optimize: Fetch only orders from the last 30 days for detailed metrics
+        const thirtyDaysAgoAll = new Date();
+        thirtyDaysAgoAll.setDate(thirtyDaysAgoAll.getDate() - 30);
         
+        const orders = await Order.find({ 
+            chef: chefId,
+            createdAt: { $gte: thirtyDaysAgoAll }
+        }).lean();
+        
+        // Fetch All-time aggregations for Total Earnings and Total Customers
+        const mongoose = require('mongoose');
+        const allTimeStats = await Order.aggregate([
+            { $match: { chef: new mongoose.Types.ObjectId(chefId) } },
+            { $group: {
+                _id: null,
+                totalEarnings: { 
+                    $sum: { $cond: [{ $in: ['$status', ['Ready', 'Completed']] }, '$totalPrice', 0] } 
+                },
+                allCustomers: { $addToSet: '$user' },
+                totalOrders: { $sum: 1 },
+                completedOrders: { $sum: { $cond: [{ $in: ['$status', ['Ready', 'Completed']] }, 1, 0] } }
+            }}
+        ]);
+
+        const statsResult = allTimeStats[0] || { totalEarnings: 0, allCustomers: [], totalOrders: 0, completedOrders: 0 };
+        const totalEarnings = statsResult.totalEarnings;
+        const totalCustomersCount = statsResult.allCustomers.length;
+        const orderCompletionRate = statsResult.totalOrders > 0 ? Math.round((statsResult.completedOrders / statsResult.totalOrders) * 100) : 100;
+
         // Fetch pending bookings
         const ChefBooking = require('../models/ChefBooking');
         const pendingBookings = await ChefBooking.countDocuments({ chef: chefId, status: 'Pending' });
@@ -326,7 +328,6 @@ const getChefStats = async (req, res) => {
         const activeOrders = orders.filter(o => ['Placed', 'Accepted', 'Preparing'].includes(o.status)).length;
         
         const completedOrders = orders.filter(o => ['Ready', 'Completed'].includes(o.status));
-        const totalEarnings = completedOrders.reduce((sum, o) => sum + o.totalPrice, 0);
         
         const upcomingScheduled = orders.filter(o => o.orderType !== 'Instant' && ['Placed', 'Accepted'].includes(o.status)).length;
 
@@ -348,7 +349,6 @@ const getChefStats = async (req, res) => {
         const upcomingBookingsList = await ChefBooking.find({ chef: chefId, status: { $in: ['Pending', 'Confirmed'] } }).sort({ date: 1 }).limit(3);
 
         // Performance metrics (mocked/calculated)
-        const orderCompletionRate = orders.length > 0 ? Math.round((completedOrders.length / orders.length) * 100) : 100;
         // In a full implementation, calculate this from actual deliveredAt vs expected time.
         const onTimeDelivery = 100; 
         const feedbackScore = req.user.rating ? (req.user.rating).toFixed(1) : '0.0';
@@ -514,7 +514,7 @@ const getChefStats = async (req, res) => {
             upcomingScheduled,
             walletBalance,
             rating: req.user.rating || 0,
-            totalCustomers: [...new Set(orders.map(o => o.user.toString()))].length,
+            totalCustomers: totalCustomersCount,
             activeDishes,
             inactiveDishes,
             recentReviews,

@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { API_URL } from '../../config';
 import { AdminSocketContext } from '../../context/AdminSocketContext';
 
-const statusTabs = ['All', 'pending', 'active', 'suspended'];
+const statusTabs = ['All', 'active', 'suspended'];
 
 const SubadminChefs = () => {
     const { user } = useContext(AuthContext);
@@ -95,12 +95,6 @@ const SubadminChefs = () => {
                                 </td>
                                 <td data-label="Actions">
                                     <div style={{ display: 'flex', gap: '6px', justifyContent: window.innerWidth < 768 ? 'flex-end' : 'flex-start' }}>
-                                        {c.status === 'pending' && (
-                                            <>
-                                                <button className="btn btn-outline" style={{ padding: '3px 10px', fontSize: '0.78rem', color: 'var(--success)' }} onClick={() => handleStatus(c._id, 'active')}>Approve</button>
-                                                <button className="btn btn-outline" style={{ padding: '3px 10px', fontSize: '0.78rem', color: 'var(--error)' }} onClick={() => handleStatus(c._id, 'suspended')}>Reject</button>
-                                            </>
-                                        )}
                                         {c.status === 'active' && (
                                             <button className="btn btn-outline" style={{ padding: '3px 10px', fontSize: '0.78rem', color: 'var(--error)' }} onClick={() => handleStatus(c._id, 'suspended')}>Suspend</button>
                                         )}

@@ -4,6 +4,7 @@ import { API_URL } from './config';
 const api = axios.create({
     baseURL: API_URL,
     withCredentials: true,
+    timeout: 30000,
 });
 
 let isRefreshing = false;
@@ -83,10 +84,13 @@ api.interceptors.response.use(
                     { withCredentials: true }
                 );
 
-                // Update the stored access token in localStorage
+                // Update the stored access token and refresh token in localStorage
                 if (data.accessToken && storedUser) {
                     const parsed = JSON.parse(storedUser);
                     parsed.token = data.accessToken;
+                    if (data.refreshToken) {
+                        parsed.refreshToken = data.refreshToken;
+                    }
                     localStorage.setItem('userInfo', JSON.stringify(parsed));
                 }
 

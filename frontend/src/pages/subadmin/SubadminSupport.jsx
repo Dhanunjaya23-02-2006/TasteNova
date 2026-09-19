@@ -4,7 +4,7 @@ import { useModal } from '../../components/ModalProvider';
 import toast from 'react-hot-toast';
 import { API_URL } from '../../config';
 
-const categories = ['food_quality', 'late_delivery', 'wrong_item', 'missing_item', 'chef_issue', 'delivery_issue', 'payment_issue', 'refund_request', 'other'];
+const categories = ['food_quality', 'late_delivery', 'wrong_item', 'missing_item', 'chef_issue', 'payment_issue', 'refund_request', 'other'];
 
 const SubadminSupport = () => {
     const { user } = useContext(AuthContext);

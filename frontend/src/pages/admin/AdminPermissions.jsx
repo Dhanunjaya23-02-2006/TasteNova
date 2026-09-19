@@ -28,7 +28,6 @@ const permissionCategories = [
             { label: 'View all orders in assigned city', granted: true },
             { label: 'Cancel active orders', granted: true },
             { label: 'View order payment details', granted: true },
-            { label: 'Reassign delivery partners', granted: true },
             { label: 'Issue manual refunds above threshold', granted: false },
             { label: 'Modify order amounts after placement', granted: false },
         ]
@@ -43,18 +42,6 @@ const permissionCategories = [
             { label: 'View customer support tickets', granted: true },
             { label: 'Delete customer accounts', granted: false },
             { label: 'Access customer payment methods', granted: false },
-        ]
-    },
-    {
-        title: 'Delivery Partners',
-        icon: Truck,
-        color: '#e67e22',
-        permissions: [
-            { label: 'View delivery partners in assigned city', granted: true },
-            { label: 'Verify or reject delivery registrations', granted: true },
-            { label: 'Suspend delivery partner accounts', granted: true },
-            { label: 'View live delivery tracking', granted: true },
-            { label: 'Modify delivery partner payouts', granted: false },
         ]
     },
     {
@@ -129,7 +116,7 @@ const AdminPermissions = () => {
                         {user.name}
                     </h3>
                     <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                        Role: <strong style={{ color: 'var(--primary)' }}>City Sub-Admin</strong>
+                        Role: <strong style={{ color: 'var(--primary)' }}>Regional Admin</strong>
                     </div>
                 </div>
                 <div style={{ textAlign: 'center', padding: '12px 20px', background: 'var(--bg-dark)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>

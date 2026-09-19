@@ -110,33 +110,7 @@ const SuperadminCityAnalytics = () => {
                         </div>
                     </div>
                 </div>
-                <div className="sa-card" style={{ padding: '24px' }}>
-                    <h3 className="sa-modal-title">Average Delivery Time</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '24px' }}>
-                        {citiesData.length === 0 && <div className="sa-empty">No data available</div>}
-                        {citiesData.map((city, i) => {
-                            // Using mock average delivery time for now since it might not be in the backend model
-                            const avgTime = city.averageDeliveryTime || Math.floor(Math.random() * 20 + 25); // fallback random 25-45m
-                            const maxTime = 60;
-                            const percentage = Math.min((avgTime / maxTime) * 100, 100);
-                            
-                            let color = '#27ae60'; // green
-                            if (avgTime > 40) color = '#e74c3c'; // red
-                            else if (avgTime > 30) color = '#f39c12'; // orange
 
-                            return (
-                                <div key={i}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '8px' }}>
-                                        <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>{city.cityName} ({avgTime}m)</span>
-                                    </div>
-                                    <div style={{ width: '100%', background: 'var(--border-subtle)', height: '12px', borderRadius: '6px' }}>
-                                        <div style={{ width: `${percentage}%`, background: color, height: '100%', borderRadius: '6px' }}></div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
             </div>
         </div>
     );

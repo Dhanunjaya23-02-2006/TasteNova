@@ -30,7 +30,7 @@ const SuperadminPayouts = () => {
                 <div>
                     <h1 className="sa-page-title">Payouts & Settlements</h1>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>
-                        Manage weekly settlements for Chefs and Delivery Partners.
+                        Manage weekly settlements for Chefs.
                     </p>
                 </div>
                 <div style={{ display: 'flex', gap: '12px' }}>

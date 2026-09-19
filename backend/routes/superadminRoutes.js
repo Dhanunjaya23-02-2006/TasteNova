@@ -33,7 +33,6 @@ router.get('/audit-logs', ctrl.getAuditLogs);
 // Operations Module
 router.get('/orders', ctrl.getOrders);
 router.get('/chefs', ctrl.getChefs);
-router.get('/delivery', ctrl.getDelivery);
 router.get('/customers', ctrl.getCustomers);
 router.get('/customer-stats', ctrl.getCustomerStats);
 router.get('/customers/:id', ctrl.getCustomerDetail);

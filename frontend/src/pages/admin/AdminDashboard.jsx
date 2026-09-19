@@ -43,7 +43,6 @@ const AdminDashboard = () => {
                     { label: 'Orders Today', value: stats.todayOrders, icon: ShoppingBag, onClick: () => navigate('/admin/orders') },
                     { label: 'Revenue', value: `₹${stats.todayRevenue?.toLocaleString() || 0}`, icon: TrendingUp },
                     { label: 'Active Chefs', value: stats.totalChefs, icon: ChefHat, onClick: () => navigate('/admin/chefs') },
-                    { label: 'Delivery Partners', value: stats.totalDelivery, icon: Truck, onClick: () => navigate('/admin/delivery') },
                     { label: 'Customers', value: stats.totalCustomers, icon: Users, onClick: () => navigate('/admin/customers') },
                     { label: 'Open Issues', value: stats.openTickets, icon: AlertTriangle, onClick: () => navigate('/admin/support') },
                 ].map((s, i) => (

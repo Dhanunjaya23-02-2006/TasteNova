@@ -16,6 +16,8 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 const validateEnv = require('./middleware/validateEnv');
 const startEscrowSettlementJob = require('./cron/escrowSettlementJob');
+const startOrderAutoCancelJob = require('./cron/orderAutoCancelJob');
+const requestLogger = require('./middleware/requestLogger');
 
 dotenv.config();
 validateEnv(); // Ensure all secrets are present
@@ -24,9 +26,17 @@ startEscrowSettlementJob();
 
 const app = express();
 
+const allowedOrigins = process.env.CORS_ORIGINS 
+    ? process.env.CORS_ORIGINS.split(',') 
+    : ['http://localhost:5173'];
+
 app.use(cors({
     origin: function (origin, callback) {
-        callback(null, true);
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
     },
     credentials: true
 }));
@@ -36,26 +46,41 @@ app.use(compression());
 app.use(helmet()); // Set security HTTP headers
 app.use(hpp()); // Prevent HTTP Parameter Pollution
 
+app.use(requestLogger);
+
 // Rate Limiting
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5000, // Increased to 5000 for development to prevent 429 errors
+    max: process.env.NODE_ENV === 'production' ? 100 : 5000,
     message: 'Too many requests from this IP, please try again after 15 minutes'
 });
 app.use('/api', limiter);
 
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20, // strict limit for auth routes
+    message: 'Too many authentication attempts from this IP, please try again after 15 minutes'
+});
+app.use('/api/auth', authLimiter);
+
 app.use(express.json({ limit: '10kb' })); // Body parser, limiting data size
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(mongoSanitize()); // Prevent NoSQL injection
 app.use(cookieParser()); // Cookie parser for JWT
 
 // Server and Socket.io for chat/tracking
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: '*',
-        methods: ['GET', 'POST']
+        origin: allowedOrigins,
+        methods: ['GET', 'POST'],
+        credentials: true
     }
 });
 app.set('io', io);
+
+// Start Cron Jobs that need IO
+startOrderAutoCancelJob(io);
 
 // Socket.io Authentication Middleware
 io.use((socket, next) => {
@@ -166,7 +191,6 @@ const referralRoutes = require('./routes/referralRoutes');
 const contentRoutes = require('./routes/contentRoutes');
 
 // Use Routes
-const app_use = false; // Dummy variable to keep the line lengths exact or close
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
@@ -199,13 +223,42 @@ app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 
 // Global Error Handler
 app.use((err, req, res, next) => {
-    const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
-    res.status(statusCode);
-    res.json({
+    let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+    
+    // Check if error is from CORS
+    if (err.message === 'Not allowed by CORS') {
+        statusCode = 403;
+    }
+
+    res.status(statusCode).json({
         message: err.message,
         stack: process.env.NODE_ENV === 'production' ? null : err.stack,
     });
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => {
+    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+});
+
+// Graceful Shutdown
+const shutdown = () => {
+    console.log('SIGTERM/SIGINT received, shutting down gracefully...');
+    server.close(() => {
+        console.log('HTTP server closed');
+        const mongoose = require('mongoose');
+        mongoose.connection.close(false).then(() => {
+            console.log('MongoDB connection closed');
+            process.exit(0);
+        });
+    });
+    
+    // Force close after 10s
+    setTimeout(() => {
+        console.error('Could not close connections in time, forcefully shutting down');
+        process.exit(1);
+    }, 10000);
+};
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);

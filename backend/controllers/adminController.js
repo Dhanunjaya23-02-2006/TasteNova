@@ -22,7 +22,7 @@ const getDashboard = async (req, res) => {
             liveOrders
         ] = await Promise.all([
             Order.find({ ...cityFilter, createdAt: { $gte: today } }),
-            User.countDocuments({ ...cityFilter, role: 'chef', status: 'active' }),
+            User.countDocuments({ ...cityFilter, role: 'chef', status: 'active', superAdminApproved: true }),
             User.countDocuments({ ...cityFilter, role: 'delivery', status: 'active' }),
             User.countDocuments({ ...cityFilter, role: 'user' }),
             Zone.find(cityFilter),
@@ -211,7 +211,6 @@ const getOrders = async (req, res) => {
         const orders = await Order.find(query)
             .populate('user', 'name phone email')
             .populate('chef', 'name kitchenName')
-            .populate('deliveryPartner', 'name phone')
             .sort({ createdAt: -1 });
 
         res.json(orders);
@@ -223,7 +222,7 @@ const getOrders = async (req, res) => {
 const getChefs = async (req, res) => {
     try {
         const { status, search } = req.query;
-        let query = { role: 'chef', ...req.cityFilter, ...req.zoneFilter };
+        let query = { role: 'chef', superAdminApproved: true, ...req.cityFilter, ...req.zoneFilter };
         if (status && status !== 'All') query.status = status;
 
         const chefs = await User.find(query).select('-password').sort({ createdAt: -1 });
@@ -242,19 +241,6 @@ const getCustomers = async (req, res) => {
         res.json(customers);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching customers', error: error.message });
-    }
-};
-
-const getDeliveryPartners = async (req, res) => {
-    try {
-        const { status, search } = req.query;
-        let query = { role: 'delivery', ...req.cityFilter }; // Delivery partners operate city-wide mostly
-        if (status && status !== 'All') query.status = status;
-
-        const deliveryPartners = await User.find(query).select('-password').sort({ createdAt: -1 });
-        res.json(deliveryPartners);
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching delivery partners', error: error.message });
     }
 };
 
@@ -323,6 +309,6 @@ module.exports = {
     getDashboard,
     getZones, createZone, updateZone, deleteZone,
     getSubAdmins, createSubAdmin, updateSubAdmin, deleteSubAdmin,
-    getOrders, getChefs, getCustomers, getDeliveryPartners,
+    getOrders, getChefs, getCustomers,
     getCitySettings, updateCitySettings
 };

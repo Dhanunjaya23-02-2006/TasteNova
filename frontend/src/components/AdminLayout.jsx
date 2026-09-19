@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { AdminSocketProvider } from '../context/AdminSocketContext';
 import {
-    LayoutDashboard, ShoppingBag, ChefHat, Truck, Tag,
+    LayoutDashboard, ShoppingBag, ChefHat, Tag,
     Users, Image, Ticket, MessageCircle, RotateCcw, BarChart3,
     Bell, ChevronDown, User, MapPin, Shield, LogOut, Menu, X, Settings
 } from 'lucide-react';
@@ -15,7 +15,6 @@ const mainNav = [
     { to: '/admin/subadmins', label: 'Sub-Admins', icon: Users },
     { to: '/admin/orders', label: 'Orders', icon: ShoppingBag },
     { to: '/admin/chefs', label: 'Chefs', icon: ChefHat },
-    { to: '/admin/delivery', label: 'Delivery', icon: Truck },
 ];
 
 const moreNav = [

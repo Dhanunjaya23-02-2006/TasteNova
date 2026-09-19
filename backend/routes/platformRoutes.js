@@ -4,9 +4,7 @@ const {
     getCategories,
     createCategory,
     updateCategory,
-    deleteCategory,
-    getDeliverySettings,
-    updateDeliverySettings
+    deleteCategory
 } = require('../controllers/platformController');
 const { protect, superAdmin } = require('../middleware/authMiddleware');
 
@@ -18,10 +16,5 @@ router.route('/categories')
 router.route('/categories/:id')
     .put(protect, superAdmin, updateCategory)
     .delete(protect, superAdmin, deleteCategory);
-
-// Delivery Settings
-router.route('/delivery-settings')
-    .get(getDeliverySettings)
-    .put(protect, superAdmin, updateDeliverySettings);
 
 module.exports = router;
